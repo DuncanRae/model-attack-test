@@ -22,7 +22,7 @@ EDITION_DETAIL = "v1.0, 3 August 2026"
 
 RISKS = [
     {"key": "prompt-injection", "id": "LLM01", "title": "Prompt Injection", "was": "LLM01:2025", "reach": "yes",
-     "note": "Reaches instructions typed or pasted into the chat. Does not reach instructions in files, pictures, web pages, tool results or memory."},
+     "note": "Reaches instructions typed or pasted into the chat, and, when planted documents are used, instructions in files the system reads. Does not reach pictures, web pages it fetches, tool results or memory."},
     {"key": "sensitive-information", "id": "LLM02", "title": "Sensitive Information Disclosure", "was": "LLM02:2025", "reach": "yes",
      "note": "Reaches asking for other people's data, and anything named in never_say. Real cover needs a pack written for this system's own data."},
     {"key": "excessive-agency", "id": "LLM03", "title": "Excessive Agency", "was": "LLM06:2025", "reach": "words",
@@ -54,10 +54,10 @@ def coverage(rows: list[dict]) -> dict:
     out = []
     for risk in RISKS:
         mine = [r for r in rows if r.get("owasp") == risk["key"]]
-        out.append(dict(risk, sent=sum(1 for r in mine if r["verdict"] not in ("error", "not run")),
+        out.append(dict(risk, sent=sum(1 for r in mine if r["verdict"] not in ("error", "not run", "not reached")),
                         went_wrong=sum(1 for r in mine if r["verdict"] in ("failed", "blocked", "leaked")),
                         to_read=sum(1 for r in mine if r.get("read")),
-                        no_reply=sum(1 for r in mine if r["verdict"] in ("error", "not run"))))
+                        no_reply=sum(1 for r in mine if r["verdict"] in ("error", "not run", "not reached"))))
     attacks = [r for r in rows if not r["ordinary"]]
     return {"edition": EDITION, "detail": EDITION_DETAIL, "rows": out, "agentic": AGENTIC, "reading": READING,
             "untagged": sum(1 for r in attacks if not r.get("owasp"))}

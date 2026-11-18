@@ -17,6 +17,14 @@ A pack is a JSON file:
                             given to the model judge when there is one)
                 owasp       which OWASP risk it tries, as one of the keys in owasp.py (optional)
                 source      where the technique was reported, and when (optional; shown in the report)
+                severity    high, medium or low: how much it matters if this one gets through (optional; medium)
+                no_variants true when the attack must be sent as written and never in disguise (optional)
+                reached_if  words that show the test took place at all, for an attack that depends on something
+                            the system has to find first, such as a planted document. A reply with none of them
+                            comes out as "not reached", which is neither held nor failed (optional)
+  goals       open goals for an attacker that adapts (see adaptive.py): no fixed message, only what to get the
+              assistant to do. Each has id, goal, fail_if, gives_way, and optionally owasp, severity and source.
+              They are only used when a run asks for them
   ordinary    messages an honest person might send that look a little like an attack. Each has id, text and
               optionally before. They must get a normal answer: the run counts any that are refused.
 
@@ -34,6 +42,9 @@ from . import Problem, owasp
 
 PACKS_DIR = Path(__file__).resolve().parent.parent / "packs"
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}$")   # an id, and the short name of a pack kept in packs/
+ITEM = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}(?:\.[a-z0-9]{1,12})?$")   # an id as a run knows it: perhaps with a disguise's name after a dot
+SEVERITIES = ("high", "medium", "low")
+GOALS = "open goals, where the attacker writes the messages"
 MAX_FILE = 2_000_000
 MAX_TEXT = 6000
 MAX_PATTERN = 400
@@ -90,10 +101,11 @@ def _where(name: str) -> Path:
     return Path(name).expanduser()
 
 
-def _item(raw, where: str, ordinary: bool, pack: str) -> dict:
+def _item(raw, where: str, ordinary: bool, pack: str, goal: bool = False) -> dict:
     if not isinstance(raw, dict):
         raise Problem(f"{where}: each entry must be an object.")
-    allowed = {"id", "text", "before"} if ordinary else {"id", "category", "text", "before", "fail_if", "gives_way", "owasp", "source"}
+    allowed = ({"id", "text", "before"} if ordinary else {"id", "goal", "fail_if", "gives_way", "owasp", "source", "severity"} if goal
+               else {"id", "category", "text", "before", "fail_if", "gives_way", "owasp", "source", "severity", "no_variants", "reached_if"})
     extra = sorted(set(raw) - allowed)
     if extra:
         raise Problem(f"{where}: the entry {raw.get('id', '?')!r} has a field this tool does not know: {extra[0]!r}.")
@@ -107,15 +119,25 @@ def _item(raw, where: str, ordinary: bool, pack: str) -> dict:
     before = raw.get("before", [])
     if not isinstance(before, list) or len(before) > MAX_BEFORE:
         raise Problem(f"{at}: 'before' must be a list of at most {MAX_BEFORE} earlier messages.")
+    severity = raw.get("severity", "medium")
+    if severity not in SEVERITIES:
+        raise Problem(f"{at}: 'severity' must be high, medium or low.")
+    if not isinstance(raw.get("no_variants", False), bool):
+        raise Problem(f"{at}: 'no_variants' must be true or false.")
     return {
         "id": item_id,
-        "category": "ordinary messages that must get a normal answer" if ordinary else _text(raw.get("category"), f"{at}: 'category'", 80),
-        "text": _text(raw.get("text"), f"{at}: 'text'", MAX_TEXT),
+        "category": "ordinary messages that must get a normal answer" if ordinary else GOALS if goal else _text(raw.get("category"), f"{at}: 'category'", 80),
+        "text": _text(raw.get("goal") if goal else raw.get("text"), f"{at}: '{'goal' if goal else 'text'}'", 600 if goal else MAX_TEXT),
         "before": [_text(b, f"{at}: each earlier message", MAX_TEXT) for b in before],
         "fail_if": [] if ordinary else patterns(raw.get("fail_if"), f"{at}: 'fail_if'"),
         "gives_way": "" if ordinary else _text(raw.get("gives_way"), f"{at}: 'gives_way'", 400, optional=True),
         "owasp": "" if ordinary else risk,
         "source": "" if ordinary else _text(raw.get("source"), f"{at}: 'source'", 300, optional=True),
+        "severity": "" if ordinary else severity,
+        "no_variants": bool(raw.get("no_variants", False)),
+        "reached_if": [] if ordinary or goal else patterns(raw.get("reached_if"), f"{at}: 'reached_if'"),
+        "goal": goal,
+        "variant": "",
         "ordinary": ordinary,
         "pack": pack,
     }
@@ -129,10 +151,10 @@ def load(name: str) -> dict:
     if not isinstance(raw, dict):
         raise Problem(f"{where}: the file must hold one object.")
     pack = _text(raw.get("name"), f"{where}: 'name'", 80)
-    attacks, ordinary = raw.get("attacks", []), raw.get("ordinary", [])
-    if not isinstance(attacks, list) or not isinstance(ordinary, list) or len(attacks) + len(ordinary) > MAX_ITEMS:
-        raise Problem(f"{where}: 'attacks' and 'ordinary' must be lists, of at most {MAX_ITEMS} entries together.")
-    if not attacks and not ordinary:
+    attacks, ordinary, goals = raw.get("attacks", []), raw.get("ordinary", []), raw.get("goals", [])
+    if not all(isinstance(x, list) for x in (attacks, ordinary, goals)) or len(attacks) + len(ordinary) + len(goals) > MAX_ITEMS:
+        raise Problem(f"{where}: 'attacks', 'ordinary' and 'goals' must be lists, of at most {MAX_ITEMS} entries together.")
+    if not attacks and not ordinary and not goals:
         raise Problem(f"{where}: there is nothing in it to send.")
     reviewed = raw.get("reviewed", "")
     if reviewed:
@@ -146,14 +168,17 @@ def load(name: str) -> dict:
         "reviewed": reviewed,
         "about": _text(raw.get("about"), f"{where}: 'about'", 2000, optional=True),
         "everywhere": patterns(raw.get("everywhere"), f"{where}: 'everywhere'"),
-        "items": [_item(a, where, False, pack) for a in attacks] + [_item(o, where, True, pack) for o in ordinary],
+        "items": ([_item(a, where, False, pack) for a in attacks] + [_item(g, where, False, pack, goal=True) for g in goals]
+                  + [_item(o, where, True, pack) for o in ordinary]),
     }
 
 
-def join(names: list[str], only: list[str] | None = None, skip: list[str] | None = None, per_kind: int | None = None) -> dict:
-    """Several packs as one run: the attacks first, then the ordinary messages. `only` and `skip` take categories or
-    ids. `per_kind` keeps the first few of each kind, for a quick pass: a pack lists its plainest tricks first. An id
-    used twice is refused, since the report would not say which was meant."""
+def join(names: list[str], only: list[str] | None = None, skip: list[str] | None = None, per_kind: int | None = None,
+         variants: list[str] | None = None, adaptive: bool = False) -> dict:
+    """Several packs as one run: the attacks first, then any open goals, then the ordinary messages. `only` and `skip`
+    take categories or ids. `per_kind` keeps the first few of each kind, for a quick pass: a pack lists its plainest
+    tricks first. `variants` adds each attack again in the disguises named. Open goals are left out unless `adaptive`.
+    An id used twice is refused, since the report would not say which was meant."""
     if not names:
         raise Problem("Name at least one pack, for example: --pack core")
     packs = [load(n) for n in names]
@@ -163,7 +188,7 @@ def join(names: list[str], only: list[str] | None = None, skip: list[str] | None
             if item["id"] in seen:
                 raise Problem(f"The id {item['id']!r} is in both {seen[item['id']]!r} and {p['name']!r}. Rename one.")
             seen[item["id"]] = p["name"]
-    items = [i for p in packs for i in p["items"]]
+    items = [i for p in packs for i in p["items"] if adaptive or not i["goal"]]
     known = {i["id"] for i in items} | {i["category"] for i in items}
     for word in (only or []) + (skip or []):
         if word not in known:
@@ -184,9 +209,14 @@ def join(names: list[str], only: list[str] | None = None, skip: list[str] | None
         items = few
     if not items:
         raise Problem("Nothing is left to send after --only and --skip.")
+    if variants:
+        from .variants import expand   # here, not at the top: variants.py reads nothing from this file
+        items = expand(items, variants)
     everywhere = list(dict.fromkeys(x for p in packs for x in p["everywhere"]))
     return {"packs": [p["name"] for p in packs], "reviews": [{"pack": p["name"], "reviewed": p["reviewed"]} for p in packs], "everywhere": everywhere,
-            "items": [i for i in items if not i["ordinary"]] + [i for i in items if i["ordinary"]]}
+            "variants": list(variants or []),
+            "items": ([i for i in items if not i["ordinary"] and not i["goal"]] + [i for i in items if i["goal"]]
+                      + [i for i in items if i["ordinary"]])}
 
 
 def categories(items: list[dict]) -> list[str]:

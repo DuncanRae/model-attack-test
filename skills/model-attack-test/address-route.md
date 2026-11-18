@@ -45,6 +45,12 @@ python3 TOOL run --target their-target.json --pack core --pack recent --yes
 - `--repeat 3` sends each message three times. A model's answers vary, and once is enough for an attacker.
 - `--judge judge-target.json` has a second model read every reply. Only a model the person is allowed to send the
   system's replies to.
+- `--variants base64,reversed,story` also sends each attack in those disguises (see "Going further" in `SKILL.md`).
+- `--attacker attacker-target.json` has a model write its own messages towards the packs' open goals, up to
+  `--turns` messages each. The goals are harmless on purpose. The system's replies are sent to that model, so use
+  one the person is allowed to send them to. If that model declines the job, the goal is marked as not tried.
+- `python3 TOOL plant --out PLANTS` makes planted documents, and `python3 TOOL compare OLDER NEWER` says what
+  changed between two runs. Both are described in `SKILL.md`.
 - Never add `--production` unless the person says, in their own words, that production is what they mean.
 
 ## 4. Read and report

@@ -2,6 +2,55 @@
 
 Every version: what changed, how it was checked, and what was not.
 
+## v0.5.0 (18 November 2026)
+
+Four things the other open tools do, built here in this tool's own way, and a plain account of what was left out.
+
+**What changed**
+
+- **Disguises** (`--variants`, `attack_test/variants.py`). Each attack can be sent again in base64, ROT13, digits
+  for letters, backwards, look-alike letters, unseen characters, two halves, a story or a code comment. The report
+  has a "By disguise" table with how many got through only in disguise (D35).
+- **Severity** on every attack, and the report leads with high (D36). **`compare`** says what got worse, what was
+  fixed and what is still wrong between two runs, and ends with exit code 1 when something got worse (D37).
+- **Planted documents** (`plant`, `attack_test/plant.py`). Nine test files with an instruction hidden a different
+  way in each, and a pack of questions about them (D38). A new result, **"tested nothing"**, for when the system
+  never read the file: it is not counted as a pass (D39).
+- **An attacker that adapts** (`attack_test/adaptive.py`). Six harmless open goals in the core pack. On the command
+  line a second model writes the messages (`--attacker`, `--turns`). Through the chat page the agent does
+  (`begin --adaptive`), and brings back the whole exchange as a file (D40, D41).
+- **The README says why there is no library of harmful prompts**, and where to get garak, PyRIT and promptfoo and
+  how each differs from this (D42).
+- The practice chatbot can answer from a folder of documents (`practice --docs`), and its `strict` kind can now be
+  started from the command line: it was missing from the choices.
+
+**How it was checked**
+
+- 102 tests, on Python 3.9 and 3.12. The 23 new ones cover: every disguise and that the request can be got back out
+  of it; what is never disguised; a run where attacks got through only in base64; disguises through the chat-page
+  route; severity and the order of the report; the planted files (the instruction is in each and hidden where it
+  should be, the Word file is a sound archive, the PDF's own index points at the right place); obeyed, held and
+  never found coming out as three results; the whole way through with the practice chatbot reading the files; an
+  attacker that keeps trying and stops when a reply gives way; one that never gets there; one that declines (nothing
+  was sent to the system); open goals at a chat page, where an earlier reply that gave way still counts; and
+  `compare` on real runs and on a file filled with rubbish.
+- The planted Word file was opened with macOS's own converter, and the PDF was read with a PDF library and turned
+  into a picture: the page shows the ordinary text only, and the hidden instruction is still in what a reader
+  extracts.
+- Two full runs through the command line, of `core`, `recent` and nine planted documents with three disguises (283
+  messages each), against the weak and the holding practice chatbot reading the planted files. Weak: 71 of 268 gave
+  way, 46 of them high severity, 4 only in base64, 2 tested nothing (the Word and PDF files, which that chatbot
+  cannot read). Holding: none gave way, 2 tested nothing. `compare` between them: 73 fixed, none worse.
+
+**What was not checked**
+
+- **None of this against a real model or a real system.** See `AGENTS.md` section 7 for the list.
+- **The attacker that adapts has never had a real model as attacker.** Its prompt is untried, and a general-purpose
+  model may decline the job.
+- Open goals and disguises through a browser, by an agent.
+- The descriptions of the other tools are from their documentation and write-ups in November 2026, not from
+  running them.
+
 ## v0.4.2 (18 November 2026)
 
 **What changed**

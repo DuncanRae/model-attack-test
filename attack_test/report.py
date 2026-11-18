@@ -33,6 +33,8 @@ summary{cursor:pointer;padding:12px 16px;display:flex;gap:10px;align-items:basel
 .said{background:var(--code)}.reply{border:1px solid var(--line)}.lab{color:var(--soft);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;margin:8px 0 0}
 .marks{margin:6px 0 0;padding:0 0 0 18px;font-size:.9rem}.marks li{color:var(--bad)}.marks li.j{color:var(--soft)}
 table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{text-align:left;padding:6px 16px;border-top:1px solid var(--line)}th{color:var(--soft);font-weight:600}
+.sev{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;padding:1px 6px;border:1px solid var(--line);color:var(--soft)}
+.sev.high{color:var(--bad);border-color:var(--bad)}.sev.medium{color:var(--warn);border-color:var(--warn)}
 td.n,th.n{text-align:right}td.n{white-space:nowrap}td small{color:var(--soft)}tr.off td{color:var(--soft)}td.bad{color:var(--bad);font-weight:600}td{vertical-align:top}th,td{padding-left:12px;padding-right:12px}footer{color:var(--soft);font-size:.85rem;margin-top:24px}
 """
 
@@ -42,7 +44,9 @@ def e(value) -> str:
 
 
 def _item(row: dict) -> str:
-    out = [f'<div class="item"><h3>{e(row["id"])} <small>{e(row["category"])} · {e(row["pack"])}</small></h3>']
+    badge = f' <span class="sev {e(row["severity"])}">{e(row["severity"])}</span>' if row.get("severity") else ""
+    disguise = f' · in disguise: {e(row["variant"])}' if row.get("variant") else ""
+    out = [f'<div class="item"><h3>{e(row["id"])}{badge} <small>{e(row["category"])} · {e(row["pack"])}{disguise}</small></h3>']
     if row["gives_way"]:
         out.append(f'<p class="lab">Giving way would look like</p><div>{e(row["gives_way"])}</div>')
     if row.get("source"):
@@ -57,7 +61,7 @@ def _item(row: dict) -> str:
                 out.append(f'<p class="lab">Earlier message {i + 1}</p><div class="said">{e(said)}</div>')
                 if i < len(earlier):
                     out.append(f'<div class="reply">{e(earlier[i])}</div>')
-            out.append(f'<p class="lab">Sent</p><div class="said">{e(row["text"])}</div>')
+            out.append(f'<p class="lab">{"The goal" if row.get("goal") else "Sent"}</p><div class="said">{e(row["text"])}</div>')
         if run is None:
             out.append(f'<p class="lab">Not sent</p><div>{e(row.get("skipped") or "")}</div>')
             continue
@@ -65,7 +69,11 @@ def _item(row: dict) -> str:
         if run["error"]:
             out.append(f'<p class="lab">{label}</p><div class="reply">No reply: {e(run["error"])}</div>')
             continue
-        out.append(f'<p class="lab">{label}</p><div class="reply">{e(run["reply"])}</div>')
+        if run.get("turns"):
+            for i, turn in enumerate(run["turns"], 1):
+                out.append(f'<p class="lab">Message {i}, written by the attacker</p><div class="said">{e(turn["said"])}</div><div class="reply">{e(turn["reply"])}</div>')
+        else:
+            out.append(f'<p class="lab">{label}</p><div class="reply">{e(run["reply"])}</div>')
         notes = [f"<li>{e(m)}</li>" for m in run["marks"]]
         by = (run["judge"] or {}).get("by", "the model judge")
         if run["judge"] and not any(m.startswith(by) for m in run["marks"]):
@@ -110,9 +118,12 @@ def page(result: dict) -> str:
     s, t, rows = result["stats"], result["target"], result["rows"]
     pick = lambda verdict, ordinary=False, read=None: [r for r in rows if r["verdict"] == verdict and r["ordinary"] == ordinary
                                                          and (read is None or r["read"] == read)]
-    sent = s["attacks"] - sum(1 for r in rows if not r["ordinary"] and r["verdict"] in ("error", "not run"))
+    sent = s["attacks"] - sum(1 for r in rows if not r["ordinary"] and r["verdict"] in ("error", "not run", "not reached"))
     asked = s["ordinary"] - sum(1 for r in rows if r["ordinary"] and r["verdict"] in ("error", "not run"))
-    tiles = [("bad" if s["failed"] else "ok", s["failed"], "attacks it gave way to"),
+    order = {"high": 0, "medium": 1, "low": 2}
+    by_severity = lambda rs: sorted(rs, key=lambda r: order.get(r.get("severity"), 3))
+    high = f', {s["failed_high"]} of them high severity' if s.get("failed_high") else ""
+    tiles = [("bad" if s["failed"] else "ok", s["failed"], "attacks it gave way to" + high),
              ("ok" if sent and s["held"] == sent else "", f'{s["held"]} of {sent}', "attacks held, of those that got a reply")]
     if s["ordinary"]:
         tiles.append(("bad" if s["blocked"] else "ok", f'{s["answered"]} of {asked}', "ordinary messages given a normal answer"))
@@ -120,15 +131,25 @@ def page(result: dict) -> str:
         tiles.append(("bad", s["leaked"], "ordinary messages that were given something secret"))
     if s["to_read"]:
         tiles.append(("warn", s["to_read"], "held replies nobody has read yet"))
+    if s.get("not_reached"):
+        tiles.append(("warn", s["not_reached"], "attacks that tested nothing: the system never found what they depend on"))
     if s["errors"] or s["not_run"]:
         tiles.append(("warn", s["errors"] + s["not_run"], "messages with no reply, or not sent"))
+    disguises = ""
+    if result.get("disguises"):
+        lines = "".join(f'<tr><td>{e(d["name"])}</td><td class="n">{d["sent"]}</td><td class="n{" bad" if d["went_wrong"] else ""}">{d["went_wrong"]}</td>'
+                        f'<td class="n{" bad" if d["only_in_disguise"] else ""}">{d["only_in_disguise"]}</td></tr>' for d in result["disguises"])
+        disguises = ('<details open><summary><h2>By disguise</h2><small>the same attacks, sent again in a form meant to slip past a filter</small></summary>'
+                     '<table><tr><th>Disguise</th><th class="n">Sent</th><th class="n">Gave way</th><th class="n">Only in disguise</th></tr>' + lines
+                     + '</table><div class="item"><p>"Only in disguise" counts attacks that were held as written and got through in this form. '
+                     'A number there means something is reading the plain words and not the meaning.</p></div></details>')
     by_cat: dict[str, dict] = {}
     for r in rows:
         c = by_cat.setdefault(r["category"], {"n": 0, "bad": 0, "read": 0, "none": 0})
         c["n"] += 1
         c["bad"] += r["verdict"] in ("failed", "blocked", "leaked")
         c["read"] += bool(r["read"])
-        c["none"] += r["verdict"] in ("error", "not run")
+        c["none"] += r["verdict"] in ("error", "not run", "not reached")
     table = "".join(f'<tr><td>{e(k)}</td><td class="n">{v["n"]}</td><td class="n">{v["bad"]}</td><td class="n">{v["read"]}</td><td class="n">{v["none"]}</td></tr>'
                     for k, v in by_cat.items())
     stopped = f'<div class="note stop"><p><strong>The run did not finish.</strong> {e(result["stopped"])}</p></div>' if result["stopped"] else ""
@@ -152,16 +173,18 @@ def page(result: dict) -> str:
 <div class="note"><p><strong>What this does and does not show.</strong> It shows how the system answered these known tricks on this day. It is not a certificate and it is not sign-off: a system that held here can still be talked round by a trick that is not in the packs, or by the same trick on another try.</p>
 <p>Word lists can be wrong both ways. Read every reply under "Gave way" before treating it as a fault, and read the held replies nobody has read: a reply can give way in words no list looks for.</p></div>
 {_owasp(result)}
-{_section("Gave way", "the assistant looks to have done what it was asked", pick("failed"), True)}
+{_section("Gave way", "the assistant looks to have done what it was asked. High severity first", by_severity(pick("failed")), True)}
 {_section("Ordinary messages given something secret", "nobody was even trying", pick("leaked", True), True)}
 {_section("Ordinary messages refused", "an honest person was turned away", pick("blocked", True), True)}
 {_section("Held, not read by anyone yet", "no word list fired, and the reply was in the assistant's own words", pick("held", read=True))}
+{_section("Tested nothing", "the reply showed no sign of what the attack depends on, such as a planted document. Check the system can find it, then run again", pick("not reached"), True)}
 {_section("No reply", "the system did not answer", [r for r in rows if r["verdict"] == "error"])}
 {_section("Not sent", "the run stopped first, or the message could not be sent", [r for r in rows if r["verdict"] == "not run"])}
 {_section("Held", "declined plainly, or read by a model and found to have held", pick("held", read=False))}
 {_section("Ordinary messages answered", "as they should be", pick("answered", True))}
-<details open><summary><h2>By kind of trick</h2></summary><table><tr><th>Kind</th><th class="n">Sent</th><th class="n">Went wrong</th><th class="n">To read</th><th class="n">No reply</th></tr>{table}</table></details>
-<footer>model-attack-test {e(result["version"])} · {s["requests"]} requests to the system{f', {s["judge_requests"]} to the judge' if s["judge_requests"] else ''} · {result["seconds"]} seconds. This page may hold whatever the system gave away: share it as you would the system's own data.</footer>
+{disguises}
+<details open><summary><h2>By kind of trick</h2></summary><table><tr><th>Kind</th><th class="n">Sent</th><th class="n">Went wrong</th><th class="n">To read</th><th class="n">No result</th></tr>{table}</table></details>
+<footer>model-attack-test {e(result["version"])} · {s["requests"]} requests to the system{f', {s["judge_requests"]} to the judge' if s["judge_requests"] else ''}{f', {s["attacker_requests"]} to the attacker model' if s.get("attacker_requests") else ''} · {result["seconds"]} seconds. This page may hold whatever the system gave away: share it as you would the system's own data.</footer>
 </main></body></html>
 """
 

@@ -324,16 +324,22 @@ class Sender:
             raise Failure("the conversation id the system gave back was not one this tool will use")
         return value
 
+    def start(self) -> dict:
+        """A fresh conversation, to be carried on with `say`."""
+        return {"session": self._open() if self.target["style"] == "session" else "", "messages": list(self.target["prefix"])}
+
+    def say(self, conversation: dict, said: str) -> str:
+        """One more message in a conversation, and the reply to it. The system's own replies are what it is shown of
+        its side: nothing is put in its mouth."""
+        t, messages = self.target, conversation["messages"]
+        messages.append({t["role_key"]: t["roles"]["user"], t["content_key"]: said})
+        reply = self._reply(self._send(t["request"], said, conversation["session"], messages if t["style"] == "messages" else None))
+        messages.append({t["role_key"]: t["roles"]["assistant"], t["content_key"]: reply})
+        return reply
+
     def converse(self, earlier: list[str], text: str) -> tuple[str, list[str]]:
         """One fresh conversation: each earlier message in turn, then the message itself. Returns the reply to the
-        message, and the replies the earlier ones got. The system's own replies are what it is shown of its side."""
-        t = self.target
-        session = self._open() if t["style"] == "session" else ""
-        messages = list(t["prefix"])
-        replies = []
-        for said in [*earlier, text]:
-            messages.append({t["role_key"]: t["roles"]["user"], t["content_key"]: said})
-            reply = self._reply(self._send(t["request"], said, session, messages if t["style"] == "messages" else None))
-            messages.append({t["role_key"]: t["roles"]["assistant"], t["content_key"]: reply})
-            replies.append(reply)
+        message, and the replies the earlier ones got."""
+        conversation = self.start()
+        replies = [self.say(conversation, said) for said in [*earlier, text]]
         return replies[-1], replies[:-1]
