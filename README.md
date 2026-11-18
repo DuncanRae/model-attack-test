@@ -33,13 +33,25 @@ harmful content will not be taken.
 
 The skill is one folder in the common "agent skill" form (a `SKILL.md` with a name and a description), which
 Claude, OpenAI's Codex and Google Antigravity all read. The agent needs a browser it can control and a terminal with
-Python 3. Whether an agent will do the work is up to its model:
+Python 3.
 
-| Agent | Where it stands |
+### Which model
+
+Whether an agent will do the work is up to its model. This is security testing, and general-purpose models are
+cautious about it. **A model that is permitted to do security work is the better choice**, where you have access
+to one: some providers offer models with fewer restrictions on security testing to organisations they have
+approved. That is not a way round a refusal. It is using a model whose rules allow the task.
+
+Where the general-purpose models stood in November 2026:
+
+| Agent and model | Where it stands |
 |---|---|
-| Claude (Claude Code, and the Code tab of the Claude desktop app) | Runs. It asks you to confirm the system is yours to test first |
-| Codex | Should load: instructions below. Not tried yet |
-| Antigravity | Loads. On 18 November 2026 Gemini 4 declined to do the work (see "What to know" below) |
+| Claude (Claude Code, and the Code tab of the Claude desktop app), with the Claude 5.5 models and Claude Fable 5.2 | Seems to work. It asks you to confirm the system is yours to test first |
+| Codex and ChatGPT, with OpenAI's models | Not tested. It should load: instructions below |
+| Antigravity, with Gemini 4 | Loads, and the model declined to do the work (see "What to know" below) |
+
+Models change. If you run it with one that is not listed, or one of these behaves differently for you, please open
+an issue saying which model and what happened.
 
 ### Install it
 

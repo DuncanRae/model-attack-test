@@ -2,6 +2,22 @@
 
 Every version: what changed, how it was checked, and what was not.
 
+## v0.4.2 (18 November 2026)
+
+**What changed**
+
+- **A "Which model" section in the README.** A model permitted to do security work is the better choice where one
+  is available. Of the general-purpose models in November 2026: the Claude 5.5 models and Claude Fable 5.2 seem to
+  work, Gemini 4 declined, and OpenAI's models have not been tested (D34).
+
+**How it was checked**
+
+- The Claude and Gemini lines are what one person saw when running the skill. Nothing new was run for this version.
+
+**What was not checked**
+
+- Any model permitted to do security work. Any OpenAI model.
+
 ## v0.4.1 (18 November 2026)
 
 **What changed**

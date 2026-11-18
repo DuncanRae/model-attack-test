@@ -1,7 +1,7 @@
 {
   "name": "model-attack-test",
   "description": "Test an AI chat system you are building against known tricks (prompt injection, jailbreaks, leaking its instructions or other people's data) and get a report of which ones it gave way to.",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "author": { "name": "Duncan Rae" },
   "license": "MIT",
   "repository": "https://github.com/DuncanRae/model-attack-test"

@@ -38,6 +38,7 @@ the end.
 | D31 | The skill's quick pass is the first two of each kind from `core` and `recent`: 30 messages | A person waiting on an agent typing will not sit through 107 on a first try, and a first run should try the newer techniques as well |
 | D32 | The skill is not reworded to get a model past its own refusal. Gemini 4 in Antigravity declined to send attack messages "even with authorization or ownership" (November 2026) and the skill was left as it is | The refusal is the model's rule about the task, not a misreading of the skill: it named the task correctly. Describing the work as something else so that a model does it is what this tool exists to catch, and it would last only until the next model |
 | D33 | Nothing that names a real organisation's internal systems or people is in the repository, and a test checks for the ones it knows about. The example pack uses a made-up company | The tool began inside one organisation and was published in November 2026 for anyone to use |
+| D34 | The README says a model permitted to do security work is the better choice, and lists where the general-purpose models stood | Whether the skill runs depends on the model more than on the agent. Choosing a model whose rules allow security testing is the honest answer to a refusal, where rewording the skill (D32) is not. The list is dated because it will go out of date |
 
 ## Open
 
