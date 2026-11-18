@@ -48,7 +48,8 @@ the way a person would.
 - **Nothing that names a real organisation's internal systems or people goes into the repository.**
   `tests/test_public.py` checks for the ones it knows about. The author's own name belongs in the licence and the
   manifest only: the same file checks it is in no attack, test, skill or example. A folder called `internal/`, if there is one, is the
-  owner's private notes: it is ignored by git and must stay that way.
+  owner's private notes: it is ignored by git and must stay that way. That goes for a run against a real system
+  too: say what it showed about THIS TOOL, never what kind of system it was, how it behaved or what it got wrong.
 
 ### Security rules for all code here
 
@@ -86,7 +87,7 @@ the way a person would.
 | `attack_test/judge.py` | Word lists, the general refusal wording, and `ModelJudge` (a second model, never trusted) |
 | `attack_test/run.py` | `run_suite` (send and judge), `sheet` and `judge_sheet` (replies collected another way), the counts |
 | `attack_test/owasp.py` | The OWASP Top 10 for LLM Applications (2026): the ten risks, what sending messages can reach of each, the map a result carries, and where the list was read from |
-| `attack_test/byhand.py` | A run through a chat page, one message at a time: `begin`, `next_message`, `record`, `finish`. Sends nothing. A reply comes in as a file only, and so does the exchange of an open goal |
+| `attack_test/byhand.py` | A run through a chat page, one message at a time: `begin`, `next_message`, `record`, `finish`. Sends nothing. A reply comes in as a file only, and so do the replies to set-up messages and the exchange of an open goal. In one conversation it counts how many there were in the end |
 | `attack_test/variants.py` | Disguises: the same attack sent again in base64, backwards, in a story and so on. Changes what is sent, never how it is judged |
 | `attack_test/plant.py` | Planted documents: nine test files with a hidden instruction and a made-up marker each, and a pack of questions. The Word and PDF files are written by hand |
 | `attack_test/adaptive.py` | The attacker that adapts: the rules every attacker is given, and `Attacker`, a second model that writes the next message towards an open goal |
@@ -115,16 +116,18 @@ claude plugin validate .                         # the plugin layout
 claude --plugin-dir .                            # try the skill in Claude Code without installing it
 ```
 
-## 7. The state at v0.6.1 (18 November 2026)
+## 7. The state at v0.7.2 (18 November 2026)
 
 **It has been run almost only against the practice chatbot, which is not a model.** `CHANGELOG.md` has what each
-version was checked against.
+version was checked against. On 18 November 2026 the skill (at v0.3.0) was run once against a real chat system,
+through its chat page: 171 messages. v0.7.0 fixes what that run showed about the tool.
 
 Checked: the tests pass on Python 3.9 and 3.12. Full runs of `core`, `recent` and a set of planted documents, with
 three disguises, through the command line against the weak and the holding practice bot, and `compare` on the two.
 The planted Word file opened with macOS's own converter and the PDF with a PDF library and as a picture. The skill
 followed from the built folder alone by a fresh agent on a cheaper model, in a browser, against the practice chat
 page (at v0.2.0, before the newer features). One person has run the skill in Claude against a real chat page.
+That run, re-judged with v0.7.0, gives what a person found by reading every reply.
 
 Not checked, in the order it matters:
 
@@ -139,8 +142,9 @@ Not checked, in the order it matters:
 4. **Open goals through a browser**, by an agent. The wording in the skill has not been followed by one.
 5. **Planted documents in a real knowledge base.** How a system splits and indexes a file decides whether the
    hidden instruction and the reference number come back together. Expect "tested nothing" where they do not.
-6. **The word lists against real models.** Those in `core` were first tuned against one model that declined with a
-   fixed sentence. Those in `recent` and in planted documents have never met a model. Expect false alarms under
+6. **The word lists against real models.** Four in the example pack fired on refusals in the first real run and
+   were fixed (D51). 19 more there would fire the same way (O10). Those in `core` were first tuned against one
+   model that declined with a fixed sentence. Those in `recent` and in planted documents have never met a model. Expect false alarms under
    "Gave way". Each one found should be fixed in the pattern and pinned in the tests.
 7. **Disguises and the `recent` pack through a browser.** Text that cannot be seen and look-alike letters may not
    survive being typed.

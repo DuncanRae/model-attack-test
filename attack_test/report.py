@@ -46,7 +46,8 @@ def e(value) -> str:
 def _item(row: dict) -> str:
     badge = f' <span class="sev {e(row["severity"])}">{e(row["severity"])}</span>' if row.get("severity") else ""
     disguise = f' · in disguise: {e(row["variant"])}' if row.get("variant") else ""
-    out = [f'<div class="item"><h3>{e(row["id"])}{badge} <small>{e(row["category"])} · {e(row["pack"])}{disguise}</small></h3>']
+    where = f' · conversation {e(row["conversation"])}' if row.get("conversation") else ""
+    out = [f'<div class="item"><h3>{e(row["id"])}{badge} <small>{e(row["category"])} · {e(row["pack"])}{disguise}{where}</small></h3>']
     if row["gives_way"]:
         out.append(f'<p class="lab">Giving way would look like</p><div>{e(row["gives_way"])}</div>')
     if row.get("source"):
@@ -59,8 +60,12 @@ def _item(row: dict) -> str:
             earlier = run["earlier"] if run else []
             for i, said in enumerate(row["before"]):
                 out.append(f'<p class="lab">Earlier message {i + 1}</p><div class="said">{e(said)}</div>')
+                if run is None:
+                    continue
                 if i < len(earlier):
-                    out.append(f'<div class="reply">{e(earlier[i])}</div>')
+                    out.append(f'<p class="lab">Its reply</p><div class="reply">{e(earlier[i]) or "(nothing)"}</div>')
+                elif not run["error"]:
+                    out.append('<p class="lab">Its reply</p><div>Not kept, so not judged.</div>')
             if row.get("padding"):
                 out.append(f'<p class="lab">Sent</p><div>{row["padding"]:,} characters of ordinary filler, and then:</div>')
             if row.get("burst"):
@@ -86,6 +91,7 @@ def _item(row: dict) -> str:
                        + (f', of which the first {len(run["reply"]):,} are shown' if run.get("chars", 0) > len(run["reply"]) else "")
                        + f'. It took {run.get("seconds", 0):g} seconds.</div>')
         notes = [f"<li>{e(m)}</li>" for m in run["marks"]]
+        notes += [f'<li class="j">{e(f)} (to read: a set-up reply often repeats the words, so this is not counted)</li>' for f in run.get("flags", [])]
         by = (run["judge"] or {}).get("by", "the model judge")
         if run["judge"] and not any(m.startswith(by) for m in run["marks"]):
             notes.append(f'<li class="j">{e(by)}: {e(run["judge"]["verdict"].replace("_", " "))}. {e(run["judge"]["reason"])}</li>')
@@ -141,7 +147,9 @@ def page(result: dict) -> str:
     if s["leaked"]:
         tiles.append(("bad", s["leaked"], "ordinary messages that were given something secret"))
     if s["to_read"]:
-        tiles.append(("warn", s["to_read"], "held replies nobody has read yet"))
+        tiles.append(("warn", s["to_read"], "held replies to read: nobody has, or whoever did was not sure"))
+    if s.get("ordinary_to_read"):
+        tiles.append(("warn", s["ordinary_to_read"], "ordinary messages answered, but whoever read them was not sure"))
     if s.get("not_reached"):
         tiles.append(("warn", s["not_reached"], "attacks that tested nothing: the system never found what they depend on"))
     if s["errors"] or s["not_run"]:
@@ -182,17 +190,18 @@ def page(result: dict) -> str:
 <div class="tiles">{"".join(f'<div class="tile {c}"><b>{e(n)}</b><span>{e(label)}</span></div>' for c, n, label in tiles)}</div>
 {stopped}{noted}
 <div class="note"><p><strong>What this does and does not show.</strong> It shows how the system answered these known tricks on this day. It is not a certificate and it is not sign-off: a system that held here can still be talked round by a trick that is not in the packs, or by the same trick on another try.</p>
-<p>Word lists can be wrong both ways. Read every reply under "Gave way" before treating it as a fault, and read the held replies nobody has read: a reply can give way in words no list looks for.</p></div>
+<p>Word lists can be wrong both ways. Read every reply under "Gave way" before treating it as a fault, and read the replies marked to read: a reply can give way in words no list looks for.</p></div>
 {_owasp(result)}
 {_section("Gave way", "the assistant looks to have done what it was asked. High severity first", by_severity(pick("failed")), True)}
 {_section("Ordinary messages given something secret", "nobody was even trying", pick("leaked", True), True)}
 {_section("Ordinary messages refused", "an honest person was turned away", pick("blocked", True), True)}
-{_section("Held, not read by anyone yet", "no word list fired, and the reply was in the assistant's own words", pick("held", read=True))}
+{_section("Held, to read", "no word list counted it, but only a word list has looked at it, whoever read it was not sure, or a reply to an earlier message set one off", pick("held", read=True))}
 {_section("Tested nothing", "the reply showed no sign of what the attack depends on, such as a planted document. Check the system can find it, then run again", pick("not reached"), True)}
 {_section("No reply", "the system did not answer", [r for r in rows if r["verdict"] == "error"])}
 {_section("Not sent", "the run stopped first, or the message could not be sent", [r for r in rows if r["verdict"] == "not run"])}
 {_section("Held", "declined plainly, or read by a model and found to have held", pick("held", read=False))}
-{_section("Ordinary messages answered", "as they should be", pick("answered", True))}
+{_section("Ordinary messages to read", "counted as answered, but whoever read the reply was not sure, or a reply to an earlier message needs a look", pick("answered", True, read=True), True)}
+{_section("Ordinary messages answered", "as they should be", pick("answered", True, read=False))}
 {disguises}
 <details open><summary><h2>By kind of trick</h2></summary><table><tr><th>Kind</th><th class="n">Sent</th><th class="n">Went wrong</th><th class="n">To read</th><th class="n">No result</th></tr>{table}</table></details>
 <footer>model-attack-test {e(result["version"])} · {s["requests"]} requests to the system{f', {s["judge_requests"]} to the judge' if s["judge_requests"] else ''}{f', {s["attacker_requests"]} to the attacker model' if s.get("attacker_requests") else ''} · {result["seconds"]} seconds. This page may hold whatever the system gave away: share it as you would the system's own data.</footer>

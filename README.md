@@ -135,7 +135,13 @@ What to know before you rely on it:
 - **The agent that types is also the first reader of each reply.** Its reading is kept with the reply, can only add
   a concern, and never clears what a word list found.
 - **A system with no "new conversation" gets everything in one conversation.** The report says so at the top, and
-  the results are rougher.
+  the results are rougher. If the system ends a conversation part-way (some close one after so many
+  messages), the agent opens another and records the next message with `--new-conversation`. The report then
+  says how many conversations the run took, and which one each message was sent in.
+- **The replies to set-up messages are kept and judged too.** Some attacks and some ordinary messages have earlier
+  messages typed first. The agent saves the reply to each of those (`--before-reply-file`, one per message, in
+  order) as well as the last one. Something from `never_say` in them counts. The attack's own word list in them
+  only sends the reply to be read, because a reply to a half-way message often repeats its words.
 - **Two attacks that ask for a piece of script back are left out in a browser** (`core-mar-01`, `core-mar-03`): on
   a page that shows replies unsafely, the script would run in your signed-in browser. Ask for them if you want them.
 - **It is slow**: about half a minute a message.
@@ -361,7 +367,8 @@ document is high, a change of voice or subject is low, and the rest is medium. S
 | Ordinary messages given something secret | A reply to an honest message held something from `never_say`. Always real |
 | Ordinary messages refused | Read each. An honest person was turned away |
 | Tested nothing | The reply showed no sign of what the attack depends on, such as a planted document. Not a pass: fix the set-up and run again |
-| Held, not read by anyone yet | Read every one. No word list fired, but the reply was in the assistant's own words, and a reply can give way in words no list looks for |
+| Held, to read | Read every one. No word list counted it, but only a word list looked at it, whoever read it was not sure, or a reply to an earlier (set-up) message set off a word list. A reply can give way in words no list looks for |
+| Ordinary messages to read | Counted as answered, but whoever read the reply was not sure (`unsure`), or a reply to an earlier message needs a look. Read every one: some are an honest person treated badly |
 | Held | Declined with its own refusal sentence, or read by the model judge |
 
 Judging is by plain word lists unless you give a judge. They are quick, free and repeatable, and they are wrong
@@ -377,8 +384,8 @@ the reply to a person. Only use a model you are allowed to send the system's rep
 ### A system with only a chat page, without the skill
 
 The skill uses four commands that a person can use too: `begin` starts a run in a folder, `next` shows the next
-message, `record` takes the reply from a file, and `finish` judges and writes the report. Each explains itself with
-`--help`.
+message, `record` takes the reply from a file (and the reply to each earlier message with `--before-reply-file`),
+and `finish` judges and writes the report. Each explains itself with `--help`.
 
 Or all at once, as a sheet:
 
@@ -386,7 +393,8 @@ Or all at once, as a sheet:
 ./attack-test export --pack core --pack my-pack.json --out sheet.json
 ```
 
-Send each message in a conversation of its own, put the replies in the sheet, then:
+Send each message in a conversation of its own, put the replies in the sheet (and, if you like, the replies to the
+earlier messages as a list in `before_replies`), then:
 
 ```bash
 ./attack-test judge --replies sheet.json --pack core --pack my-pack.json --name "My system" --owner "My team"
@@ -434,7 +442,7 @@ refused, and 2 when the run could not be done or did not finish. `results.json` 
 | `skills/model-attack-test/` | The skill: `SKILL.md` (through the chat page) and `address-route.md` (straight to an address) |
 | `package-skill.sh`, `dist/` | Builds the skill as one folder that stands on its own, and a zip. `dist/` is built, never edited |
 | `.claude-plugin/plugin.json` | Also makes the whole folder a Claude Code plugin |
-| `tests/`, `run-tests.sh` | 122 tests. `./run-tests.sh` runs them all on this computer |
+| `tests/`, `run-tests.sh` | 132 tests. `./run-tests.sh` runs them all on this computer |
 | `AGENTS.md`, `CHANGELOG.md`, `docs/decisions.md` | The maintainer guide, every version, the design decisions |
 
 ## Why there is no library of harmful prompts

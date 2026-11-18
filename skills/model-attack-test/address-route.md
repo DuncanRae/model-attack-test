@@ -59,4 +59,4 @@ python3 TOOL run --target their-target.json --pack core --pack recent --yes
 ## 4. Read and report
 
 As in steps 6 and 7 of `SKILL.md`: read `results.json` in the report folder, every reply under "Gave way",
-"Ordinary messages refused" and "Held, not read by anyone yet", and tell the person plainly.
+"Ordinary messages refused" and "Held, to read" and "Ordinary messages to read", and tell the person plainly.

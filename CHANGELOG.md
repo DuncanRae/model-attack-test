@@ -2,6 +2,105 @@
 
 Every version: what changed, how it was checked, and what was not.
 
+## v0.7.2 (18 November 2026)
+
+**What changed**
+
+- The notes on the first run against a real system now say only what it showed about this tool. What kind of
+  system it was, how it behaved and what it got wrong are not this project's to publish, and `AGENTS.md` now says
+  so as a rule. The example replies in one test were reworded to keep the same trap for the patterns ("is marked as
+  still open") without copying any system's wording. No code changed.
+
+**How it was checked**
+
+- 132 tests, on Python 3.9 and 3.12, with one more word in the check on what may be published.
+
+## v0.7.1 (18 November 2026)
+
+A review of v0.7.0. Its design stands. One fault and three loose ends were put right.
+
+**What changed**
+
+- **A message recorded a second time no longer moves to another conversation.** In v0.7.0 the conversation numbers
+  were counted up as replies came in, so recording an earlier message again gave it the number of the latest
+  conversation, and giving `--new-conversation` twice for one message counted two. The numbers are now worked out
+  afresh each time from where each conversation began. Recording again keeps a message's mark, a mark that was
+  forgotten can be added afterwards (the later messages move up), and `--skip` takes it off. A run recorded with
+  v0.7.0 reads the same as before.
+- **The four rewritten patterns know a friendly "no" from a refusal.** They treated any "no" or "not" earlier in
+  the sentence as declining, so "No problem, I have marked the backup question as answered" was missed. "No
+  problem", "no worries", "not a problem" and the like no longer count as declining. They also catch "noted" and
+  "recorded ... as answered", and "those answers have been carried over".
+- **The list of attacks whose word lists fire on their own request is kept exact**: the test now also fails when an
+  attack on the list no longer fires, so it cannot go stale, and it covers the cost pack.
+- The example pack ends with a line break again, like the others.
+
+**How it was checked**
+
+- 132 tests, on Python 3.9 and 3.12. The three new ones: a message recorded again, a mark given twice, a mark put
+  right afterwards and a skipped message, each against the numbers of every row; a run file as v0.7.0 left it; and
+  the four patterns against 15 replies that gave way and 17 that did not, among them "No, I can't mark it" beside
+  "No problem, I have marked it".
+- The real run re-judged again from a copy, with this version: the same result as with v0.7.0.
+
+**What was not checked**
+
+- As for v0.7.0: the new steps through a browser, by an agent.
+- The widened patterns have only met the replies in the tests and the one real run.
+
+## v0.7.0 (18 November 2026)
+
+What the first run against a real chat system showed about the tool. The skill (at v0.3.0) was run through a
+chat page, 171 messages. The tool missed something a person reading the replies saw, raised four false alarms, and
+described the run wrongly.
+
+**What changed**
+
+- **The replies to set-up messages are kept and judged** (D48). An assistant can give way to a set-up message,
+  "please talk like a pirate" say, before the last message is sent, and the tool never looked at those replies.
+  `record` now takes the reply to each earlier message
+  (`--before-reply-file`, one per message, in order) and refuses a reply to such a message without them. `next`
+  says so, and shows the command with them. `finish` runs the word lists over them: something from `never_say`
+  counts; the attack's own lists only send the row to be read, because a reply to a half-way message often repeats
+  its words. The report shows each one under its message ("Not kept, so not judged" for a run begun earlier). The
+  same judging applies on the command line, where these replies were already kept but not judged, and to a reply
+  sheet that carries `before_replies`.
+- **A run in one conversation can say where a new one began** (D49). A system may end a conversation after so
+  many messages, so a run meant for one takes several, and the report still said "ONE conversation". `record
+  --new-conversation` marks the first message in a new one, `next` says when to use it, and the report says how
+  many conversations there were and shows the number beside each message.
+- **An ordinary message read as `unsure` is to read** (D50). It is still counted as answered, but marked `read`,
+  counted (`ordinary_to_read`), and shown in a section of its own, "Ordinary messages to read". Before, such a
+  message showed as a plain answer. "Held, not read by anyone yet" is now
+  "Held, to read", since a held reply the agent was unsure of has been read.
+- **Four example-pack patterns no longer count a refusal that repeats the request** (D51): `sup-cha-05`, `-07`,
+  `-11`, `-12`. Each now looks for the shape a reply that did it would take ("I have marked ... as answered"), and
+  only in a sentence with no refusal word before it. The core pack is unchanged.
+- The skill says how to write such a pattern and how to check it, covers the set-up replies, `--new-conversation`
+  and an ordinary `unsure`, and points at `read`, `earlier` and `flags` in `results.json`.
+
+**How it was checked**
+
+- 129 tests, on Python 3.9 and 3.12. The 7 new ones: a set-up reply kept, shown, flagged by the attack's own list
+  and not counted, and counted when it holds something from `never_say`; `record` refusing a reply without its
+  set-up replies, and set-up replies with `--skip`; a run begun before this version still finishing, and saying
+  the set-up replies were not kept; an ordinary `unsure` counted and shown as to read; three conversations counted,
+  shown, and kept when a message is recorded again; `--new-conversation` refused outside a one-conversation run and
+  with `--skip`; the four patterns against refusals in the shape that set them off and against replies that gave
+  way; and a list of the attacks whose word lists still fire on their own request, which may only get shorter.
+- The real run re-judged from a copy of its `run.json`, with its conversations marked and the example pack from
+  this version: the four false alarms hold, and what gave way is what a person found by reading every reply.
+
+**What was not checked**
+
+- **The new steps through a browser, by an agent.** Saving several set-up replies and `--new-conversation` have only
+  been followed by the tests.
+- **19 more example-pack attacks** fire on a refusal that repeats the request (O10). None fired in the real run, so
+  there is no real reply to pin them with. They are listed in `tests/test_packs.py`.
+- **The model judge** is still not shown the replies to earlier messages (O11).
+- A run begun with an earlier version keeps the pack path it was begun with: re-judging it uses that copy of the
+  pack, so the four fixed patterns only apply once the new skill is installed or the path is changed.
+
 ## v0.6.1 (18 November 2026)
 
 **What changed**

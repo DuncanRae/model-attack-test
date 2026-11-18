@@ -9,7 +9,7 @@ import unittest
 
 from tests.helpers import ROOT
 
-NAMES = ["pep" + "kor", "shop" + "rite", "grp" + "it", "tp" + "rm", "supplier " + "risk", "build with " + "ai", "info" + "sec hub", "har" + "ness.io"]
+NAMES = ["proto" + "type", "pep" + "kor", "shop" + "rite", "grp" + "it", "tp" + "rm", "supplier " + "risk", "build with " + "ai", "info" + "sec hub", "har" + "ness.io"]
 PLACES = re.compile(r"/Users/[A-Za-z]|/home/[a-z]+/|C:\\Users\\", re.I)
 SKIPPED = ("reports/", "dist/", "internal/", "__pycache__/", ".git/")
 

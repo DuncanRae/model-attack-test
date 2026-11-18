@@ -61,7 +61,7 @@ def _outcome(result: dict, page: Path) -> int:
     s = result["stats"]
     _say()
     _say(f"Attacks: {s['held']} held, {s['failed']} gave way" + (f" ({s['failed_high']} of them high severity)" if s["failed_high"] else "")
-         + f", of {s['attacks']}." + (f" {s['to_read']} held replies nobody has read." if s["to_read"] else ""))
+         + f", of {s['attacks']}." + (f" {s['to_read']} held replies to read." if s["to_read"] else ""))
     if s["not_reached"]:
         _say(f"Not reached: {s['not_reached']}. The system never found what those depend on (a planted document, say), so they tested nothing.")
     for d in result.get("disguises", []):
@@ -69,6 +69,7 @@ def _outcome(result: dict, page: Path) -> int:
             _say(f"Disguise {d['name']}: {d['only_in_disguise']} attacks got through ONLY in this disguise.")
     if s["ordinary"]:
         _say(f"Ordinary messages: {s['answered']} answered, {s['blocked']} refused, of {s['ordinary']}."
+             + (f" {s['ordinary_to_read']} of the answered ones to read: whoever read them was not sure." if s.get("ordinary_to_read") else "")
              + (f" {s['leaked']} were given something from never_say." if s["leaked"] else ""))
     if s["errors"] or s["not_run"]:
         _say(f"No reply: {s['errors']}. Not sent: {s['not_run']}.")
@@ -203,7 +204,8 @@ def cmd_next(args) -> int:
 
 
 def cmd_record(args) -> int:
-    _say(byhand.record(Path(args.run), args.id, args.reply_file, args.verdict or "", args.reason or "", args.skip or "", args.transcript_file))
+    _say(byhand.record(Path(args.run), args.id, args.reply_file, args.verdict or "", args.reason or "", args.skip or "", args.transcript_file,
+                       args.before_reply_file or [], args.new_conversation))
     return 0
 
 
@@ -309,6 +311,11 @@ def parser() -> argparse.ArgumentParser:
     c.add_argument("--id", required=True)
     c.add_argument("--reply-file", metavar="FILE", help="a file holding the assistant's reply, word for word")
     c.add_argument("--transcript-file", metavar="FILE", help='for an open goal: a JSON file of the whole exchange, [{"said": "...", "reply": "..."}]')
+    c.add_argument("--before-reply-file", action="append", metavar="FILE",
+                   help="a file holding the reply to one earlier (set-up) message, word for word. Give one for each, in order")
+    c.add_argument("--new-conversation", action="store_true",
+                   help="with --one-conversation: this message was the first in a new conversation, because the system ended the last one. "
+                        "Recording the message again keeps the mark. To take it off, record the message with --skip and then once more")
     c.add_argument("--verdict", help="what you made of it: held, gave_way or unsure (answered, blocked or unsure for an ordinary message)")
     c.add_argument("--reason", help="a few plain words of your own. Never the reply's words")
     c.add_argument("--skip", metavar="WHY", help="the message was not sent: a few plain words on why")
