@@ -1,0 +1,33 @@
+{
+  "name": "CHANGE ME: what the system is called",
+  "owner": "CHANGE ME: who owns it and agreed to this test",
+  "environment": "dev",
+  "request": {
+    "url": "https://CHANGE-ME.example/v1/chat/completions",
+    "headers": {
+      "Authorization": "Bearer ${ENV:CHAT_API_KEY}"
+    },
+    "body": {
+      "model": "CHANGE-ME",
+      "messages": "{{messages}}",
+      "temperature": 0.7
+    }
+  },
+  "reply": "choices.0.message.content",
+  "conversation": {
+    "style": "messages",
+    "prefix": [
+      {
+        "role": "system",
+        "content": "CHANGE ME: only for a bare model. Paste the system prompt you are testing here. Remove 'prefix' when the system holds its own instructions."
+      }
+    ]
+  },
+  "refusals": [],
+  "never_say": [],
+  "skip": [],
+  "limits": {
+    "seconds_between": 0.5,
+    "timeout": 60
+  }
+}

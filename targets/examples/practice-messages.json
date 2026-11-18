@@ -1,0 +1,21 @@
+{
+  "name": "Leave Helper (practice)",
+  "owner": "Whoever is trying the tool",
+  "environment": "local",
+  "request": {
+    "url": "http://127.0.0.1:8777/chat",
+    "body": {
+      "messages": "{{messages}}"
+    }
+  },
+  "reply": "reply",
+  "conversation": {
+    "style": "messages"
+  },
+  "refusals": [
+    "I can only help with questions about leave"
+  ],
+  "never_say": [
+    "CANARY-7731"
+  ]
+}

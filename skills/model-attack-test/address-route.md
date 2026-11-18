@@ -1,0 +1,53 @@
+# The other way: sending straight to the system's address
+
+Use this when the system has an address that takes a message as JSON and gives back a reply, and no browser is
+needed. It is faster, each message gets a conversation of its own, and it can run in a pipeline. The rules in
+`SKILL.md` apply here too. `TOOL` is `python3 <full path to scripts/attack-test>`.
+
+One more rule for this route: **never ask for a key, token or password in the chat, and never write one in a
+file.** The target file names an environment variable (`${ENV:NAME}`). Tell the person which one to set, and let
+them set it.
+
+## 1. Write a target file
+
+Copy the closest file in `scripts/targets/examples/` into the person's project and fill it in:
+
+- `request.url`: https, or http for this computer only. `request.headers`: any key as `${ENV:NAME}`.
+- `request.body`: the JSON the system expects, with `"{{messages}}"` where the whole conversation goes, or
+  `{{message}}` and `{{session}}` when the system remembers the conversation itself.
+- `reply`: where the assistant's words are in the answer, as a dotted path (`choices.0.message.content`).
+- `refusals`: the system's set refusal sentence. `never_say`: a phrase that must never come out.
+- `skip`: for a general assistant, `off topic`, `persona and style` and `markup and links`.
+
+Every field is explained at the top of `scripts/attack_test/target.py`.
+
+## 2. Check it
+
+```bash
+python3 TOOL check --target their-target.json
+```
+
+It sends one harmless message. Keep fixing the file until what comes back is the assistant's reply and nothing else.
+
+## 3. Run
+
+```bash
+python3 TOOL list --pack core --pack recent
+```
+
+Tell the person how many messages that is and get their go-ahead. Then:
+
+```bash
+python3 TOOL run --target their-target.json --pack core --pack recent --yes
+```
+
+- `--pack their-pack.json` adds a pack written for their system.
+- `--repeat 3` sends each message three times. A model's answers vary, and once is enough for an attacker.
+- `--judge judge-target.json` has a second model read every reply. Only a model the person is allowed to send the
+  system's replies to.
+- Never add `--production` unless the person says, in their own words, that production is what they mean.
+
+## 4. Read and report
+
+As in steps 6 and 7 of `SKILL.md`: read `results.json` in the report folder, every reply under "Gave way",
+"Ordinary messages refused" and "Held, not read by anyone yet", and tell the person plainly.
