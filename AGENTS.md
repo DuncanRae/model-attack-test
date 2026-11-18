@@ -46,7 +46,8 @@ the way a person would.
   bump it to make a warning go away.
 - **The skill is not reworded to get a model past its own refusal** (D32).
 - **Nothing that names a real organisation's internal systems or people goes into the repository.**
-  `tests/test_public.py` checks for the ones it knows about. A folder called `internal/`, if there is one, is the
+  `tests/test_public.py` checks for the ones it knows about. The author's own name belongs in the licence and the
+  manifest only: the same file checks it is in no attack, test, skill or example. A folder called `internal/`, if there is one, is the
   owner's private notes: it is ignored by git and must stay that way.
 
 ### Security rules for all code here
@@ -114,7 +115,7 @@ claude plugin validate .                         # the plugin layout
 claude --plugin-dir .                            # try the skill in Claude Code without installing it
 ```
 
-## 7. The state at v0.6.0 (18 November 2026)
+## 7. The state at v0.6.1 (18 November 2026)
 
 **It has been run almost only against the practice chatbot, which is not a model.** `CHANGELOG.md` has what each
 version was checked against.

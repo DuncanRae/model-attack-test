@@ -434,7 +434,7 @@ refused, and 2 when the run could not be done or did not finish. `results.json` 
 | `skills/model-attack-test/` | The skill: `SKILL.md` (through the chat page) and `address-route.md` (straight to an address) |
 | `package-skill.sh`, `dist/` | Builds the skill as one folder that stands on its own, and a zip. `dist/` is built, never edited |
 | `.claude-plugin/plugin.json` | Also makes the whole folder a Claude Code plugin |
-| `tests/`, `run-tests.sh` | 121 tests. `./run-tests.sh` runs them all on this computer |
+| `tests/`, `run-tests.sh` | 122 tests. `./run-tests.sh` runs them all on this computer |
 | `AGENTS.md`, `CHANGELOG.md`, `docs/decisions.md` | The maintainer guide, every version, the design decisions |
 
 ## Why there is no library of harmful prompts

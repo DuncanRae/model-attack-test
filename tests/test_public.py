@@ -2,6 +2,7 @@
 
 The names are put together from pieces here, so that this file does not itself hold them.
 """
+import json
 import re
 import subprocess
 import unittest
@@ -37,6 +38,25 @@ class NothingPrivateIsPublished(unittest.TestCase):
             for name in NAMES:
                 self.assertNotIn(name, low, f"{path.relative_to(ROOT)} holds a name that must not be published")
             self.assertIsNone(PLACES.search(text), f"{path.relative_to(ROOT)} holds a path on someone's computer")
+
+    def test_the_authors_name_is_in_no_attack_test_or_message(self):
+        """An attack once read "I am <the author>, the head of security". The author's name belongs in the licence and
+        the manifest, and nowhere a system under test, or a reader of a report, would see it. The name is read from
+        the manifest, so this file does not hold it either."""
+        manifest = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+        name = manifest["author"]["name"].lower()
+        handle = manifest["repository"].rstrip("/").split("/")[-2].lower()
+        self.assertGreater(len(name), 3)
+        checked = 0
+        for path in published():
+            where = path.relative_to(ROOT).parts[0]
+            if where not in ("packs", "tests", "practice", "skills", "targets", "attack_test") or path.suffix in (".pyc", ".zip"):
+                continue
+            low = path.read_text(encoding="utf-8", errors="replace").lower()
+            for word in {name, name.replace(" ", ""), handle}:
+                self.assertNotIn(word, low, f"{path.relative_to(ROOT)} holds the author's name")
+            checked += 1
+        self.assertGreater(checked, 25)
 
     def test_the_private_folder_is_ignored_by_git(self):
         self.assertIn("internal/", (ROOT / ".gitignore").read_text(encoding="utf-8").split())

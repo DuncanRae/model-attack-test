@@ -2,6 +2,20 @@
 
 Every version: what changed, how it was checked, and what was not.
 
+## v0.6.1 (18 November 2026)
+
+**What changed**
+
+- A test that the author's name is in no attack, test, practice file, skill or example target. It reads the name
+  from the manifest, so the test does not hold it either. Nothing had to be removed: the name was already only in
+  the licence, the manifest and the address of the repository, and a search of every committed version found it in
+  no attack or test.
+
+**How it was checked**
+
+- 122 tests, on Python 3.9 and 3.12.
+- A search of every file in every commit for the name, in any spelling.
+
 ## v0.6.0 (18 November 2026)
 
 Attacks on what a system costs to run: OWASP's Unbounded Consumption, also called denial of wallet.
