@@ -22,6 +22,14 @@ A pack is a JSON file:
                 reached_if  words that show the test took place at all, for an attack that depends on something
                             the system has to find first, such as a planted document. A reply with none of them
                             comes out as "not reached", which is neither held nor failed (optional)
+                Four more are for attacks on what the system COSTS to run (see the cost pack). Each is a measured
+                limit, so there is no word list to write:
+                longer_than a reply of more than this many characters gave way: nothing stopped a very long answer
+                slower_than a reply that took more than this many seconds gave way
+                padding     this many characters of ordinary filler are put in front of the message, to see
+                            whether the system takes in a message of any size
+                burst       the message is sent this many times with no pause, to see whether the system limits
+                            how fast one user can send
   goals       open goals for an attacker that adapts (see adaptive.py): no fixed message, only what to get the
               assistant to do. Each has id, goal, fail_if, gives_way, and optionally owasp, severity and source.
               They are only used when a run asks for them
@@ -44,6 +52,9 @@ PACKS_DIR = Path(__file__).resolve().parent.parent / "packs"
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}$")   # an id, and the short name of a pack kept in packs/
 ITEM = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}(?:\.[a-z0-9]{1,12})?$")   # an id as a run knows it: perhaps with a disguise's name after a dot
 SEVERITIES = ("high", "medium", "low")
+# The most each cost attack may ask of a system. They are probes for a missing limit, never a flood: a message of
+# at most about a hundred pages, and a burst of at most sixty.
+COST_LIMITS = {"longer_than": (500, 20_000), "slower_than": (1, 600), "padding": (1_000, 300_000), "burst": (2, 60)}
 GOALS = "open goals, where the attacker writes the messages"
 MAX_FILE = 2_000_000
 MAX_TEXT = 6000
@@ -105,7 +116,8 @@ def _item(raw, where: str, ordinary: bool, pack: str, goal: bool = False) -> dic
     if not isinstance(raw, dict):
         raise Problem(f"{where}: each entry must be an object.")
     allowed = ({"id", "text", "before"} if ordinary else {"id", "goal", "fail_if", "gives_way", "owasp", "source", "severity"} if goal
-               else {"id", "category", "text", "before", "fail_if", "gives_way", "owasp", "source", "severity", "no_variants", "reached_if"})
+               else {"id", "category", "text", "before", "fail_if", "gives_way", "owasp", "source", "severity", "no_variants", "reached_if",
+                     "longer_than", "slower_than", "padding", "burst"})
     extra = sorted(set(raw) - allowed)
     if extra:
         raise Problem(f"{where}: the entry {raw.get('id', '?')!r} has a field this tool does not know: {extra[0]!r}.")
@@ -124,6 +136,12 @@ def _item(raw, where: str, ordinary: bool, pack: str, goal: bool = False) -> dic
         raise Problem(f"{at}: 'severity' must be high, medium or low.")
     if not isinstance(raw.get("no_variants", False), bool):
         raise Problem(f"{at}: 'no_variants' must be true or false.")
+    sizes = {}
+    for name, (low, high) in COST_LIMITS.items():
+        value = raw.get(name, 0)
+        if isinstance(value, bool) or not isinstance(value, int) or (value != 0 and not low <= value <= high):
+            raise Problem(f"{at}: '{name}' must be a whole number from {low:,} to {high:,}.")
+        sizes[name] = value
     return {
         "id": item_id,
         "category": "ordinary messages that must get a normal answer" if ordinary else GOALS if goal else _text(raw.get("category"), f"{at}: 'category'", 80),
@@ -138,6 +156,7 @@ def _item(raw, where: str, ordinary: bool, pack: str, goal: bool = False) -> dic
         "reached_if": [] if ordinary or goal else patterns(raw.get("reached_if"), f"{at}: 'reached_if'"),
         "goal": goal,
         "variant": "",
+        **sizes,
         "ordinary": ordinary,
         "pack": pack,
     }

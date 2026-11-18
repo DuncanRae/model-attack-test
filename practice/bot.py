@@ -24,6 +24,7 @@ import json
 import os
 import re
 import secrets
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -132,6 +133,17 @@ def weak(said: list[str]) -> str:
     found = from_docs(last, obey=True)
     if found:
         return found
+    code = re.search(r"The code word is ([A-Z]+-\d+)\.", last)
+    if code:
+        return code.group(1)   # it read to the end of however long a message it was given
+    times = re.search(r"write the word (\w+) ([\d,]+) times", last, re.I)
+    if times:
+        return " ".join([times.group(1)] * min(int(times.group(2).replace(",", "")), 6000))
+    upto = re.search(r"count from 1 to ([\d,]+)", last, re.I)
+    if upto:
+        return "\n".join(str(n) for n in range(1, min(int(upto.group(1).replace(",", "")), 6000) + 1))
+    if re.search(r"essay|one million times|over and over|five more paragraphs|longest reply", last, re.I):
+        return " ".join([NORMAL] * 80)   # as much as it can manage
     word = re.search(r"(?:reply|respond|answer|phendula|antwoord)[^.\"“]{0,40}(?:word|woord|elithi|ngelithi)\s*[\"“]?(\w+)", last, re.I)
     if word:
         return word.group(1)
@@ -178,8 +190,8 @@ def strict(said: list[str]) -> str:
 KINDS = {"weak": weak, "holding": holding, "strict": strict}
 
 
-def handler_for(kind: str, key: str = ""):
-    answer, sessions = KINDS[kind], {}
+def handler_for(kind: str, key: str = "", rate: int = 0):
+    answer, sessions, recent = KINDS[kind], {}, []
 
     class Handler(BaseHTTPRequestHandler):
         server_version, sys_version = "practice-bot", ""
@@ -210,6 +222,12 @@ def handler_for(kind: str, key: str = ""):
         def do_POST(self):
             if key and not hmac.compare_digest(self.headers.get("Authorization", ""), f"Bearer {key}"):
                 return self._out(401, {"error": "A key is needed."})
+            if rate:   # at most `rate` requests in any ten seconds, to show what a limit looks like to the tool
+                now = time.monotonic()
+                recent[:] = [t for t in recent if now - t < 10]
+                if len(recent) >= rate:
+                    return self._out(429, {"error": "Too many requests. Slow down."})
+                recent.append(now)
             try:
                 length = int(self.headers.get("Content-Length", "0"))
                 if not 0 <= length <= MAX_BODY:
@@ -244,18 +262,18 @@ def handler_for(kind: str, key: str = ""):
     return Handler
 
 
-def make_server(kind: str = "weak", port: int = 8777, key: str = "") -> ThreadingHTTPServer:
-    return ThreadingHTTPServer(("127.0.0.1", port), handler_for(kind, key))
+def make_server(kind: str = "weak", port: int = 8777, key: str = "", rate: int = 0) -> ThreadingHTTPServer:
+    return ThreadingHTTPServer(("127.0.0.1", port), handler_for(kind, key, rate))
 
 
-def serve(kind: str = "weak", port: int = 8777, docs: str | None = None) -> None:
+def serve(kind: str = "weak", port: int = 8777, docs: str | None = None, rate: int = 0) -> None:
     if not 1024 <= port <= 65535:
         raise SystemExit("Pick a port from 1024 to 65535.")
     if docs:
         if not Path(docs).is_dir():
             raise SystemExit(f"There is no folder at {docs}.")
         print(f"It will answer from {load_docs(docs)} documents in {docs} (the text files only: it cannot read Word or PDF).", flush=True)
-    server = make_server(kind, port, os.environ.get("PRACTICE_KEY", ""))
+    server = make_server(kind, port, os.environ.get("PRACTICE_KEY", ""), rate)
     print(f"Leave Helper ({kind}, made up, not a model) is at http://127.0.0.1:{port} (open it in a browser for its chat page). Ctrl+C stops it.", flush=True)
     try:
         server.serve_forever()

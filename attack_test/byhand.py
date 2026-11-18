@@ -58,7 +58,9 @@ def begin(pack_args: list[str], joined: dict, meta: dict, folder: Path, one_conv
         raise Problem(f"There is already a run in {folder}. Carry on with it (next), or give --out another folder.")
     if turns and not 1 <= turns <= MAX_TURNS:
         raise Problem(f"--turns must be from 1 to {MAX_TURNS}.")
-    items = joined["items"]
+    items = [i for i in joined["items"] if i["goal"] or run.by_hand(i)]   # a very large message or a burst cannot be typed
+    if not items:
+        raise Problem("None of these messages can be sent through a chat page: a very large message and a burst need the command line.")
     if one_conversation:
         attacks = [i for i in items if not i["ordinary"]]
         items = ([i for i in items if i["ordinary"]] + [i for i in attacks if i["category"] != PERSONA]
@@ -206,7 +208,7 @@ def record(folder: Path, item_id: str, reply_file: str | None, verdict: str = ""
         reply = _read(reply_file, "reply")
         if not reply:
             raise Problem("The reply file is empty. If the assistant said nothing, use --skip with the reason.")
-        row.update({"reply": reply[:target.MAX_REPLY], "verdict": verdict, "reason": reason, "skipped": ""})
+        row.update({"reply": reply[:target.MAX_REPLY], "chars": len(reply), "verdict": verdict, "reason": reason, "skipped": ""})
     _save(folder, data)
     left = len(_left(data))
     return f"Recorded {item_id}. {left} left." if left else f"Recorded {item_id}. That was the last one. Now run:  attack-test finish --run {folder}"

@@ -61,6 +61,10 @@ def _item(row: dict) -> str:
                 out.append(f'<p class="lab">Earlier message {i + 1}</p><div class="said">{e(said)}</div>')
                 if i < len(earlier):
                     out.append(f'<div class="reply">{e(earlier[i])}</div>')
+            if row.get("padding"):
+                out.append(f'<p class="lab">Sent</p><div>{row["padding"]:,} characters of ordinary filler, and then:</div>')
+            if row.get("burst"):
+                out.append(f'<p class="lab">Sent</p><div>This message, {row["burst"]} times with no pause:</div>')
             out.append(f'<p class="lab">{"The goal" if row.get("goal") else "Sent"}</p><div class="said">{e(row["text"])}</div>')
         if run is None:
             out.append(f'<p class="lab">Not sent</p><div>{e(row.get("skipped") or "")}</div>')
@@ -72,8 +76,15 @@ def _item(row: dict) -> str:
         if run.get("turns"):
             for i, turn in enumerate(run["turns"], 1):
                 out.append(f'<p class="lab">Message {i}, written by the attacker</p><div class="said">{e(turn["said"])}</div><div class="reply">{e(turn["reply"])}</div>')
-        else:
-            out.append(f'<p class="lab">{label}</p><div class="reply">{e(run["reply"])}</div>')
+        elif run["reply"] or not run.get("note"):
+            shown = run["reply"] if len(run["reply"]) <= 3000 else run["reply"][:3000] + f" ... ({len(run['reply']) - 3000:,} more characters are in results.json)"
+            out.append(f'<p class="lab">{label}</p><div class="reply">{e(shown)}</div>')
+        if run.get("note"):
+            out.append(f'<p>{e(run["note"])}</p>')
+        if any(row.get(k) for k in ("longer_than", "slower_than", "padding", "burst")) and (run.get("chars") or run.get("seconds")):
+            out.append(f'<p class="lab">Measured</p><div>The reply was {run.get("chars", 0):,} characters long'
+                       + (f', of which the first {len(run["reply"]):,} are shown' if run.get("chars", 0) > len(run["reply"]) else "")
+                       + f'. It took {run.get("seconds", 0):g} seconds.</div>')
         notes = [f"<li>{e(m)}</li>" for m in run["marks"]]
         by = (run["judge"] or {}).get("by", "the model judge")
         if run["judge"] and not any(m.startswith(by) for m in run["marks"]):

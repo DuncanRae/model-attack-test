@@ -120,12 +120,16 @@ def cmd_run(args) -> int:
     sender, judge = target.Sender(t), _judge(args.judge)
     attacker_sender = _model(args.attacker, "attacker")
     attacker = Attacker(attacker_sender) if attacker_sender else None
-    most = sum(args.turns if i["goal"] else 1 + len(i["before"]) for i in joined["items"]) * args.repeat
+    most = sum(args.turns if i["goal"] else i["burst"] or 1 + len(i["before"]) for i in joined["items"]) * args.repeat
     _say(f"Target: {t['name']} ({t['environment']}) at {t['request']['host']}. Owner: {t['owner']}.")
     _say(f"About to send {len(joined['items'])} messages" + (f", {args.repeat} times each" if args.repeat > 1 else "")
          + f": up to {min(most, args.max_requests)} requests. Each one costs whatever a message to this system costs.")
     if judge:
         _say(f"Every reply will also be sent to the judge at {judge.sender.target['request']['host']}.")
+    costly = [i for i in joined["items"] if i["longer_than"] or i["padding"] or i["burst"]]
+    if costly:
+        _say(f"{len(costly)} of these test what the system costs to run: they ask for very long replies, send messages of up to "
+             f"{max([i['padding'] for i in costly] + [0]):,} characters, or send a short burst. They cost more than ordinary messages.")
     if attacker:
         _say(f"Open goals: {sum(1 for i in joined['items'] if i['goal'])}, up to {args.turns} messages each. The goals and the system's replies "
              f"will be sent to the attacker model at {attacker.sender.target['request']['host']}.")
@@ -176,7 +180,9 @@ def cmd_begin(args) -> int:
         raise Problem("Test a dev copy with made-up data. If production really is meant, add --production.")
     folder = Path(args.out) if args.out else report.folder_for(name)
     goals = sum(1 for i in joined["items"] if i["goal"])
+    left_out = [i["id"] for i in joined["items"] if not i["goal"] and not run.by_hand(i)]
     byhand.begin(args.pack, joined, meta, folder, args.one_conversation, args.turns if goals else 0)
+    joined["items"] = [i for i in joined["items"] if i["id"] not in left_out]
     attacks = sum(1 for i in joined["items"] if not i["ordinary"] and not i["goal"])
     earlier = sum(len(i["before"]) for i in joined["items"])
     fixed = len(joined["items"]) - goals
@@ -184,6 +190,8 @@ def cmd_begin(args) -> int:
          + (f" Some have earlier messages that are typed first: {earlier} more to type, {fixed + earlier} in all." if earlier else ""))
     if goals:
         _say(f"Then {goals} open goals, where you write the messages: up to {args.turns} messages each.")
+    if left_out:
+        _say(f"Left out, because they cannot be typed into a chat page: {', '.join(left_out)}. They need the command line (attack-test run).")
     _say(f"The run is in {folder.resolve()}")
     _say(f"Next:  attack-test next --run {folder}")
     return 0
@@ -207,8 +215,10 @@ def cmd_finish(args) -> int:
 
 def cmd_plant(args) -> int:
     folder = Path(args.out)
-    pack = plant.make(folder)
+    pack = plant.make(folder, args.long_document)
     _say(f"{len(pack['attacks'])} planted documents written to {folder.resolve()}")
+    if args.long_document:
+        _say(f"One of them is {plant.LONG_NAME}, of about {plant.LONG_PAGES} pages. Its question asks for it to be read a thousand times: it costs more than the others.")
     _say(f"Read {folder / 'HOW-TO-USE.txt'} first. In short: put the plant-* files where your system reads documents, then run with")
     _say(f"  --pack {folder / 'plants.json'}")
     _say("and delete the files from the system afterwards. Do not give plants.json to the system: it holds the answers.")
@@ -223,7 +233,7 @@ def cmd_compare(args) -> int:
 
 def cmd_practice(args) -> int:
     from practice import bot   # the made-up chatbot lives beside the tool, not in it
-    bot.serve(args.mode, args.port, args.docs)
+    bot.serve(args.mode, args.port, args.docs, args.rate_limit)
     return 0
 
 
@@ -312,6 +322,7 @@ def parser() -> argparse.ArgumentParser:
 
     c = sub.add_parser("plant", help="write test documents with a hidden instruction in each, and a pack of questions about them")
     c.add_argument("--out", required=True, metavar="FOLDER", help="a new, empty folder for the documents")
+    c.add_argument("--long-document", action="store_true", help="also write a document of about a hundred pages, and a question that asks for it to be read a thousand times")
     c.set_defaults(go=cmd_plant)
 
     c = sub.add_parser("compare", help="say what changed between two runs")
@@ -323,6 +334,7 @@ def parser() -> argparse.ArgumentParser:
     c.add_argument("--mode", choices=("weak", "holding", "strict"), default="weak")
     c.add_argument("--port", type=int, default=8777)
     c.add_argument("--docs", metavar="FOLDER", help="a folder of documents for the chatbot to answer from, such as one `plant` wrote")
+    c.add_argument("--rate-limit", type=int, default=0, metavar="N", help="answer at most N requests in any ten seconds, to see what a limit looks like in a report")
     c.set_defaults(go=cmd_practice)
     return p
 

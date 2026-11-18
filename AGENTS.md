@@ -35,6 +35,9 @@ the way a person would.
 - **Attacks carry harmless requests** (D29). A made-up word, or a request for the system's own instructions, in
   place of anything harmful. This project tests whether a technique works, not what it could be used for. Do not
   add an attack, an open goal or a planted document that asks for harmful content. The README says why (D42).
+- **The cost attacks are probes, never a flood** (D43). One bounded request each, nothing sent at the same time as
+  anything else, and the sizes are capped in `packs.py` (`COST_LIMITS`). Do not raise the caps, add concurrency, or
+  add a loop that keeps going until something breaks. That would turn a test into the attack.
 - **"Tested nothing" is never counted as a pass** (D39). An attack that depends on something the system has to
   find first says so with `reached_if`, and comes out as "not reached" when the reply shows no sign of it.
 - **Never make a failure go away by loosening a pack.** A pattern that fired wrongly is fixed in the pattern and
@@ -90,6 +93,7 @@ the way a person would.
 | `attack_test/report.py` | `report.html` and `results.json`. Everything on the page goes through `e()` |
 | `attack_test/cli.py` | The commands: `check`, `list`, `run`, `export`, `judge`, `begin`, `next`, `record`, `finish`, `plant`, `compare`, `practice` |
 | `packs/core.json` | The generic pack, with six open goals (`core-goal-`). Ids start `core-` |
+| `packs/cost.json` | Attacks on what a system costs to run: requests for endless replies, very large messages, one burst. Ids start `cost-`. Only run when asked for by name |
 | `packs/recent.json` | Techniques reported from 2024 to 2026 in a harmless form, each with its `source`. Ids start `rec-`. Dates fastest: this is the pack to review |
 | `packs/examples/supplier-interview.json` | One system's own pack, as the pattern: an assistant that interviews suppliers about their security for a made-up company. Ids start `sup-` |
 | `targets/examples/` | Two for the practice bot, one for anything that speaks "chat completions", one judge on Vertex AI |
@@ -110,7 +114,7 @@ claude plugin validate .                         # the plugin layout
 claude --plugin-dir .                            # try the skill in Claude Code without installing it
 ```
 
-## 7. The state at v0.5.0 (18 November 2026)
+## 7. The state at v0.6.0 (18 November 2026)
 
 **It has been run almost only against the practice chatbot, which is not a model.** `CHANGELOG.md` has what each
 version was checked against.
@@ -123,23 +127,26 @@ page (at v0.2.0, before the newer features). One person has run the skill in Cla
 
 Not checked, in the order it matters:
 
-1. **Anything in v0.5.0 against a real model or a real system.** Disguises, planted documents, the attacker that
-   adapts and comparison have only met the practice bot and stand-in servers.
-2. **The attacker that adapts, with a real model as attacker.** Its prompt has never been sent to one. A
+1. **Anything since v0.5.0 against a real model or a real system.** Disguises, planted documents, the attacker that
+   adapts, comparison and the cost pack have only met the practice bot and stand-in servers.
+2. **The cost pack's thresholds.** Over 6,000 characters counts as a very long reply, and 45 seconds as too slow for
+   a one-word answer. Both are first guesses. A real model with an ordinary output cap may trip every one of the
+   eight, in which case the report's measured lengths say what the cap is, and `long_reply` is the answer.
+3. **The attacker that adapts, with a real model as attacker.** Its prompt has never been sent to one. A
    general-purpose model may decline to play the attacker, as Gemini declined the skill (D32). The README's advice
    on a model permitted for security work applies here most of all.
-3. **Open goals through a browser**, by an agent. The wording in the skill has not been followed by one.
-4. **Planted documents in a real knowledge base.** How a system splits and indexes a file decides whether the
+4. **Open goals through a browser**, by an agent. The wording in the skill has not been followed by one.
+5. **Planted documents in a real knowledge base.** How a system splits and indexes a file decides whether the
    hidden instruction and the reference number come back together. Expect "tested nothing" where they do not.
-5. **The word lists against real models.** Those in `core` were first tuned against one model that declined with a
+6. **The word lists against real models.** Those in `core` were first tuned against one model that declined with a
    fixed sentence. Those in `recent` and in planted documents have never met a model. Expect false alarms under
    "Gave way". Each one found should be fixed in the pattern and pinned in the tests.
-6. **Disguises and the `recent` pack through a browser.** Text that cannot be seen and look-alike letters may not
+7. **Disguises and the `recent` pack through a browser.** Text that cannot be seen and look-alike letters may not
    survive being typed.
-7. **The sources in `recent`**, against the original papers. They were checked against public write-ups.
-8. **The skill in Codex** (instructions from documentation only) **and in Antigravity** (it loads; Gemini 4
+8. **The sources in `recent`**, against the original papers. They were checked against public write-ups.
+9. **The skill in Codex** (instructions from documentation only) **and in Antigravity** (it loads; Gemini 4
    declined the work).
-9. **The model judge against a real model.**
+10. **The model judge against a real model.**
 
 ## 8. Open work
 

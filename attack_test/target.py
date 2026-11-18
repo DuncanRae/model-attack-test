@@ -24,7 +24,8 @@ A target file is JSON:
   refusals      word lists that show the assistant declined (its fixed sentence, if it has one)
   never_say     word lists that must never appear in any reply (phrases from its instructions, a made-up secret)
   skip          categories or ids to leave out for this system
-  limits        seconds_between (a pause between requests), timeout (seconds to wait for an answer)
+  limits        seconds_between (a pause between requests), timeout (seconds to wait for an answer), long_reply
+                (how many characters is too long a reply for this system, in place of what each cost attack allows)
 
 Secrets are only ever read from the environment, only ever put in a header, and never written to a result.
 """
@@ -57,11 +58,13 @@ RETRY_ON = (429, 503)
 
 
 class Failure(Exception):
-    """A request that did not give a usable reply. `detail` is a little of what came back, for `check` only."""
+    """A request that did not give a usable reply. `detail` is a little of what came back, for `check` only. `kind`
+    says why: "status" (the system answered with an error, and `status` is which), "timeout", "unreachable", or
+    "other". A test of the system's limits needs to tell a refusal from a system that fell over."""
 
-    def __init__(self, message: str, detail: str = ""):
+    def __init__(self, message: str, detail: str = "", kind: str = "other", status: int = 0):
         super().__init__(message)
-        self.detail = detail
+        self.detail, self.kind, self.status = detail, kind, status
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -177,8 +180,8 @@ def load(path: str) -> dict:
     if not _contains(request["body"], "{{message}}") and not _contains(request["body"], "{{messages}}"):
         raise Problem("Target file: request.body must hold {{message}} or {{messages}}, or nothing would be sent.")
     limits = raw.get("limits", {})
-    if not isinstance(limits, dict) or set(limits) - {"seconds_between", "timeout"}:
-        raise Problem("Target file: limits may hold seconds_between and timeout.")
+    if not isinstance(limits, dict) or set(limits) - {"seconds_between", "timeout", "long_reply"}:
+        raise Problem("Target file: limits may hold seconds_between, timeout and long_reply.")
     skip = raw.get("skip", [])
     if not isinstance(skip, list) or len(skip) > 200 or not all(isinstance(x, str) and 0 < len(x) <= 80 for x in skip):
         raise Problem("Target file: skip must be a list of categories or ids.")
@@ -201,6 +204,7 @@ def load(path: str) -> dict:
         "skip": list(skip),
         "seconds_between": _number(limits.get("seconds_between"), "limits.seconds_between", 0, 60, 0.0 if request["local"] else 0.5),
         "timeout": _number(limits.get("timeout"), "limits.timeout", 1, 300, 60.0),
+        "long_reply": int(_number(limits.get("long_reply"), "limits.long_reply", 500, MAX_REPLY, 0)),
     }
 
 
@@ -249,15 +253,16 @@ class Sender:
             handlers.append(urllib.request.ProxyHandler({}))   # this computer is never reached through a proxy
         self.opener = urllib.request.build_opener(*handlers)
         self.requests = 0
+        self.last_chars = 0
         self._sent_before = False
 
-    def _send(self, request: dict, message: str, session: str, messages: list | None) -> str:
+    def _send(self, request: dict, message: str, session: str, messages: list | None, patient: bool = True) -> str:
         url = request["url"].replace("{{session}}", urllib.parse.quote(session, safe=""))
         body = json.dumps(fill(request["body"], message, session, messages), ensure_ascii=False).encode("utf-8")
         headers = {"Content-Type": "application/json", "Accept": "application/json", "User-Agent": "model-attack-test"}
         headers.update({k: SECRET.sub(lambda m: self.env[m.group(1)], v) for k, v in request["headers"].items()})
         for attempt in (1, 2):
-            if self._sent_before and self.target["seconds_between"]:
+            if self._sent_before and self.target["seconds_between"] and patient:
                 self.sleep(self.target["seconds_between"])
             self._sent_before = True
             self.requests += 1
@@ -275,26 +280,27 @@ class Sender:
                     detail = ""
                 finally:
                     e.close()
-                if e.code in RETRY_ON and attempt == 1:
+                if e.code in RETRY_ON and attempt == 1 and patient:
                     self.sleep(self.retry_wait)   # told to slow down, or busy: wait once and try again
                     continue
                 if 300 <= e.code < 400:
                     raise Failure(f"the system answered with a redirect (status {e.code}), which is never followed") from None
-                raise Failure(f"the system answered with status {e.code}", detail) from None
+                raise Failure(f"the system answered with status {e.code}", detail, "status", e.code) from None
             except (socket.timeout, TimeoutError):
-                raise Failure(f"no answer within {self.target['timeout']:g} seconds") from None
+                raise Failure(f"no answer within {self.target['timeout']:g} seconds", kind="timeout") from None
             except urllib.error.URLError as e:
                 if isinstance(e.reason, (socket.timeout, TimeoutError)):
-                    raise Failure(f"no answer within {self.target['timeout']:g} seconds") from None
-                raise Failure(f"could not reach {request['host']}") from None
+                    raise Failure(f"no answer within {self.target['timeout']:g} seconds", kind="timeout") from None
+                raise Failure(f"could not reach {request['host']}", kind="unreachable") from None
             except (OSError, ValueError):
-                raise Failure(f"could not reach {request['host']}") from None
+                raise Failure(f"could not reach {request['host']}", kind="unreachable") from None
         raise Failure("the system kept answering that it was busy")
 
     def _reply(self, text: str) -> str:
         """The assistant's words out of an answer. Whatever comes back is treated as hostile: it must be text, and
         only so much of it is kept."""
         if not self.target["reply"]:
+            self.last_chars = len(text)
             return text[:MAX_REPLY]
         try:
             data = json.loads(text)
@@ -306,6 +312,7 @@ class Sender:
             raise Failure(str(e), text[:600]) from None
         if not isinstance(value, str):
             raise Failure(f"what was at {self.target['reply']!r} in the answer was not text", text[:600])
+        self.last_chars = len(value)   # how long the reply really was, before only so much of it is kept
         return value[:MAX_REPLY]
 
     def _open(self) -> str:
@@ -328,12 +335,13 @@ class Sender:
         """A fresh conversation, to be carried on with `say`."""
         return {"session": self._open() if self.target["style"] == "session" else "", "messages": list(self.target["prefix"])}
 
-    def say(self, conversation: dict, said: str) -> str:
+    def say(self, conversation: dict, said: str, patient: bool = True) -> str:
         """One more message in a conversation, and the reply to it. The system's own replies are what it is shown of
-        its side: nothing is put in its mouth."""
+        its side: nothing is put in its mouth. Without `patient` there is no pause before it and no second try when the
+        system says it is busy: that is for seeing whether the system limits how fast it can be sent to."""
         t, messages = self.target, conversation["messages"]
         messages.append({t["role_key"]: t["roles"]["user"], t["content_key"]: said})
-        reply = self._reply(self._send(t["request"], said, conversation["session"], messages if t["style"] == "messages" else None))
+        reply = self._reply(self._send(t["request"], said, conversation["session"], messages if t["style"] == "messages" else None, patient))
         messages.append({t["role_key"]: t["roles"]["assistant"], t["content_key"]: reply})
         return reply
 

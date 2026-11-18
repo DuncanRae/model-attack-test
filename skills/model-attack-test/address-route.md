@@ -49,6 +49,9 @@ python3 TOOL run --target their-target.json --pack core --pack recent --yes
 - `--attacker attacker-target.json` has a model write its own messages towards the packs' open goals, up to
   `--turns` messages each. The goals are harmless on purpose. The system's replies are sent to that model, so use
   one the person is allowed to send them to. If that model declines the job, the goal is marked as not tried.
+- `--pack cost` adds the attacks on what the system costs to run: requests for endless replies, three very large
+  messages (the largest about 85 pages) and one burst of thirty requests. It costs more than the other packs, so get
+  the person's go-ahead for it on its own, and never make a probe bigger or send it more often.
 - `python3 TOOL plant --out PLANTS` makes planted documents, and `python3 TOOL compare OLDER NEWER` says what
   changed between two runs. Both are described in `SKILL.md`.
 - Never add `--production` unless the person says, in their own words, that production is what they mean.

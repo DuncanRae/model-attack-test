@@ -32,7 +32,8 @@ RISKS = [
     {"key": "poisoning", "id": "LLM05", "title": "Data and Model Poisoning", "was": "LLM04:2025", "reach": "no",
      "note": "Cannot be tested by sending messages. It needs a review of what the model was trained and tuned on."},
     {"key": "unbounded-consumption", "id": "LLM06", "title": "Unbounded Consumption", "was": "LLM10:2025", "reach": "yes",
-     "note": "Could be tried by asking for endless or very costly answers. The packs that come with the tool do not, and it does not measure cost."},
+     "note": "Reached only with the cost pack, which is run when asked for: requests for endless output, very large messages and one short burst. "
+             "It looks for a missing limit. It does not measure money, and it does not reach a system's tools, its own loops, or many users at once."},
     {"key": "misinformation", "id": "LLM07", "title": "Misinformation", "was": "LLM09:2025", "reach": "yes",
      "note": "Could be tried with questions whose right answer is known for this system. The packs that come with the tool do not check whether an answer is true."},
     {"key": "hidden-context", "id": "LLM08", "title": "Hidden Context Exposure", "was": "LLM07:2025 System Prompt Leakage", "reach": "yes",
