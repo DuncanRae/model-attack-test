@@ -2,6 +2,34 @@
 
 Every version: what changed, how it was checked, and what was not.
 
+## v0.8.0 (18 November 2026)
+
+The first release: a zip that is ready to use, for people who do not use Git.
+
+**What changed**
+
+- **A release zip.** `model-attack-test-skill.zip` on the releases page is the skill folder, built, with the tool
+  inside it. Nothing to build and nothing to install (D52).
+- **`START-HERE.txt`** inside it: what it is, what you need, four steps, and what to do if something goes wrong,
+  written for someone who is not a developer. The easy way to install is to ask the assistant to copy the folder
+  into place. The by-hand steps for a Mac and for Windows are there too.
+- **The README opens with the same three steps.**
+- The skill tells the agent what to do when Python is missing, and that on Windows the command may be `python`.
+- `package-skill.sh` checks the zip holds what it should before it says it is built.
+
+**How it was checked**
+
+- 132 tests, on Python 3.9 and 3.12.
+- The zip was unzipped into an empty folder and the tool inside it was run from there.
+- `START-HERE.txt` was read against what the tool and the skill really do.
+
+**What was not checked**
+
+- **Nobody who is not a developer has followed `START-HERE.txt`.**
+- **Windows.** The tool has only ever run on a Mac. The Windows steps are written from how Windows and Python
+  work, not from trying them.
+- Asking an assistant to install the skill by dragging the folder into the chat.
+
 ## v0.7.2 (18 November 2026)
 
 **What changed**

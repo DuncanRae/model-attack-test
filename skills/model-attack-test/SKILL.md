@@ -17,6 +17,10 @@ person plainly what was found.
   file. Run it as `python3 <full path to scripts/attack-test> ...`, written `TOOL` below. (If there is no `scripts`
   folder here, you are in the tool's own source folder and it is the `attack-test` file two folders up.)
 
+On Windows the command may be `python` or `py` in place of `python3`: use whichever answers `--version` with 3.9
+or later. If none does, tell the person Python 3 is needed (on Windows, "Python 3" from the Microsoft Store; on a
+Mac, the developer tools it offers to install) and stop until they have it.
+
 Write the tool's path and the run folder's path out in full in every command: a terminal may not remember anything
 from one command to the next. Run each command on its own, not chained to another.
 

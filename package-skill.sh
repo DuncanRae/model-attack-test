@@ -13,7 +13,7 @@ grep -q "^## v$version " CHANGELOG.md || { echo "CHANGELOG.md has no entry for v
 out="dist/model-attack-test"
 rm -rf dist
 mkdir -p "$out/scripts/attack_test" "$out/scripts/practice" "$out/scripts/packs/examples" "$out/scripts/targets/examples"
-cp skills/model-attack-test/SKILL.md skills/model-attack-test/address-route.md "$out/"
+cp skills/model-attack-test/SKILL.md skills/model-attack-test/address-route.md skills/model-attack-test/START-HERE.txt "$out/"
 cp attack-test "$out/scripts/"
 cp attack_test/*.py "$out/scripts/attack_test/"
 cp practice/*.py "$out/scripts/practice/"
@@ -23,4 +23,8 @@ cp targets/examples/*.json "$out/scripts/targets/examples/"
 printf '%s\n' "$version" > "$out/VERSION"
 chmod +x "$out/scripts/attack-test"
 (cd dist && zip -q -r -X model-attack-test-skill.zip model-attack-test)
+listing="$(unzip -l dist/model-attack-test-skill.zip)"   # read once: a search that stops early would look like a failure
+for needed in model-attack-test/SKILL.md model-attack-test/START-HERE.txt model-attack-test/scripts/attack-test model-attack-test/scripts/packs/core.json; do
+  grep -q " $needed\$" <<< "$listing" || { echo "The zip is missing $needed."; exit 1; }
+done
 echo "Built v$version: $(pwd)/$out and $(pwd)/dist/model-attack-test-skill.zip"

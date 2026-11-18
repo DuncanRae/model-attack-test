@@ -76,6 +76,9 @@ the way a person would.
 6. **The version**, in `attack_test/__init__.py` and `.claude-plugin/plugin.json`. They must match.
 7. **Build the skill** with `./package-skill.sh`. It runs the tests and refuses if the versions differ or the
    changelog has no entry. Anyone who installed the skill has a copy: they need the new one.
+8. **Release it.** Attach `dist/model-attack-test-skill.zip` to a GitHub release named for the version, always under
+   that same file name, so the "latest release" link in the README keeps working. Keep `START-HERE.txt` true: it is
+   the only thing some people will read.
 
 ## 5. The parts
 
@@ -100,7 +103,7 @@ the way a person would.
 | `packs/examples/supplier-interview.json` | One system's own pack, as the pattern: an assistant that interviews suppliers about their security for a made-up company. Ids start `sup-` |
 | `targets/examples/` | Two for the practice bot, one for anything that speaks "chat completions", one judge on Vertex AI |
 | `practice/bot.py` | "Leave Helper": a made-up chatbot by plain rules, in three kinds (weak, holding, strict), with a chat page at `/`. With `--docs` it answers from a folder of text files, and the weak kind obeys what they say. Listens on 127.0.0.1 only |
-| `skills/model-attack-test/SKILL.md` | The skill: testing through the chat page with a browser. `address-route.md` beside it is the command-line route |
+| `skills/model-attack-test/SKILL.md` | The skill: testing through the chat page with a browser. `address-route.md` beside it is the command-line route. `START-HERE.txt` is for the person, not the agent: plain steps for someone who does not use Git, and it goes out in the release zip |
 | `package-skill.sh` | Runs the tests, then builds `dist/model-attack-test/` (the skill with the tool copied into `scripts/`) and a zip. `dist/` is never edited by hand and is not kept in version control |
 | `.claude-plugin/plugin.json` | Also makes the whole folder a Claude Code plugin |
 | `tests/` | `helpers.py` starts stand-in servers on free ports. Nothing in the tests leaves this computer |
@@ -116,7 +119,7 @@ claude plugin validate .                         # the plugin layout
 claude --plugin-dir .                            # try the skill in Claude Code without installing it
 ```
 
-## 7. The state at v0.7.2 (18 November 2026)
+## 7. The state at v0.8.0 (18 November 2026)
 
 **It has been run almost only against the practice chatbot, which is not a model.** `CHANGELOG.md` has what each
 version was checked against. On 18 November 2026 the skill (at v0.3.0) was run once against a real chat system,

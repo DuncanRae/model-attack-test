@@ -1,0 +1,120 @@
+MODEL ATTACK TEST
+Start here. This takes about five minutes to set up.
+
+
+WHAT THIS IS
+
+You have built an AI chatbot or assistant. This checks whether it can be tricked: talked into
+ignoring its instructions, giving out information it should keep, or acting out of character.
+
+You do not run it yourself. Your AI assistant does: it opens your chatbot in a browser, types
+test messages into it the way a person would, reads the replies, and gives you a report.
+
+Every test message asks for something harmless, such as replying with a made-up word.
+
+
+WHAT YOU NEED
+
+1. An AI assistant that can use a browser and run commands on your computer.
+   Claude works (the Claude desktop app, on its Code tab, or Claude Code).
+2. A chatbot of your own to test, with its web address. Use a test copy with made-up data.
+   Only test a system that is yours, or that you have clear permission to test.
+
+That is all. There is nothing to install and no code to write.
+
+
+STEP 1. PUT THE SKILL WHERE YOUR ASSISTANT CAN FIND IT
+
+The easy way: ask your assistant to do it.
+
+  1. Unzip the file you downloaded. You get a folder called  model-attack-test
+     (this file is inside it).
+  2. Open your AI assistant and start a new chat.
+  3. Type this, then drag the  model-attack-test  folder into the chat box so its location
+     is added to your message, and send it:
+
+        Please install this skill for me. Copy this whole folder into my personal
+        skills folder, then tell me when it is done:
+
+  It will tell you when it is finished.
+
+Or do it by hand:
+
+  On a Mac, for Claude:
+    1. Open Finder. In the menu bar choose Go, then Go to Folder...
+    2. Type   ~/.claude   and press Return.
+    3. If there is no folder called  skills  in there, make one (File, New Folder).
+    4. Drag the  model-attack-test  folder into  skills.
+
+  On Windows, for Claude:
+    1. Open File Explorer. Click in the address bar at the top.
+    2. Type   %USERPROFILE%\.claude   and press Enter.
+    3. If there is no folder called  skills  in there, make one.
+    4. Drag the  model-attack-test  folder into  skills.
+
+  For other assistants the folder goes somewhere else:
+    Codex         a folder called  skills  inside  .agents  in your home folder
+    Antigravity   a folder called  skills  inside  .gemini/config  in your home folder
+
+
+STEP 2. ASK FOR THE TEST
+
+Start a NEW chat (the assistant only notices a new skill in a new chat) and type, with your
+own chatbot's address:
+
+    Use the model-attack-test skill on the chatbot at https://my-chatbot.example
+    It is mine to test.
+
+
+STEP 3. ANSWER A FEW QUESTIONS AND LET IT WORK
+
+It will ask what your chatbot is for, whether you want the quick test (about 30 messages,
+a quarter of an hour) or the full one, and one or two other things. Short answers are fine.
+
+If your chatbot needs you to sign in, the assistant opens the page and waits for you to sign
+in yourself. It never types your password.
+
+Then it works through the messages and tells you how far it has got.
+
+
+STEP 4. READ THE REPORT
+
+At the end it tells you what it found, in plain words, and where the report is. The report
+is a web page saved on your computer: double-click it to open it.
+
+  "Gave way"     your chatbot did something it was asked to and should not have
+  "To read"      a person should look at these replies: the tool was not sure
+  "Held"         your chatbot did not go along with it
+
+You can ask the assistant anything about the report: "which of these matter most?",
+"how do I fix the first one?", "run it again and tell me what changed".
+
+
+THREE THINGS TO KNOW
+
+- Passing is not a certificate. It means your chatbot held against these tricks today.
+  New tricks appear all the time, and a person trying freely will find more.
+- The report contains everything your chatbot said. Share it as carefully as you would
+  share your chatbot's own data.
+- Each test message costs what any message to your chatbot costs. The quick test is small.
+
+
+IF SOMETHING GOES WRONG
+
+"It says it cannot find Python."
+    The tool needs Python 3, which most Macs already have. On a Mac, accept the offer to
+    install the developer tools when it appears. On Windows, install "Python 3" from the
+    Microsoft Store. Then ask the assistant to try again.
+
+"It says it will not do this kind of test."
+    Some AI assistants refuse security testing, even of your own system. That is the
+    assistant's own rule and there is no way round it here. Use one that allows it.
+
+"It does not seem to know about the skill."
+    Start a new chat. If it still does not, ask it: "Which skills do you have?" and check
+    the folder from Step 1 is in the right place.
+
+"My chatbot needs something this did not cover."
+    Ask the assistant: "What else can the model-attack-test skill do?" It can also test
+    disguised versions of each trick, documents with hidden instructions, and whether
+    someone could run up your costs. The project's page on GitHub explains each one.

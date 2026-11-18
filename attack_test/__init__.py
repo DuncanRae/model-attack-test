@@ -4,7 +4,7 @@ Standard library only, Python 3.9 or newer. `run.run_suite` is the one door for 
 library (a pipeline, or a page in another tool): the command line in `cli.py` is a thin layer over it.
 """
 
-VERSION = "0.7.2"
+VERSION = "0.8.0"
 
 
 class Problem(Exception):

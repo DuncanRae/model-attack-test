@@ -22,6 +22,25 @@ It began as the attack suite of one in-house assistant and was made into a tool 
 not sign-off from anyone's security team. A system that held can still be talked round by a trick that is not in the packs, or by
 the same trick on another try.
 
+## The quick way: no Git, nothing to install
+
+If you are not a developer, this is all you need.
+
+1. **Download** `model-attack-test-skill.zip` from the
+   [latest release](https://github.com/DuncanRae/model-attack-test/releases/latest) and unzip it. You get a
+   folder called `model-attack-test`.
+2. **Give it to your AI assistant.** Open Claude (the desktop app's Code tab, or Claude Code), start a new chat,
+   type *"Please install this skill for me. Copy this whole folder into my personal skills folder, then tell me
+   when it is done:"*, drag the folder into the chat box, and send.
+3. **Ask for the test.** Start another new chat and type, with your own chatbot's address: *"Use the
+   model-attack-test skill on the chatbot at https://my-chatbot.example. It is mine to test."*
+
+It asks a few questions, opens your chatbot in a browser, types the test messages the way a person would, and
+gives you a report in plain words. `START-HERE.txt` inside the folder has the same steps with more detail, how to
+do step 2 by hand, and what to do if something goes wrong.
+
+Only test a system that is yours, and use a test copy with made-up data.
+
 ## Use it responsibly
 
 Only test a system you own, or have its owner's clear go-ahead to test. Sending these messages to someone else's
@@ -55,7 +74,9 @@ an issue saying which model and what happened.
 
 ### Install it
 
-Get the code and build the skill folder (this also runs the tests):
+The zip on the [releases page](https://github.com/DuncanRae/model-attack-test/releases/latest) is the skill folder,
+built and ready: unzip it and skip to the table below. To build it yourself from the code (this also runs the
+tests):
 
 ```bash
 git clone https://github.com/DuncanRae/model-attack-test.git && cd model-attack-test && ./package-skill.sh
@@ -439,7 +460,7 @@ refused, and 2 when the run could not be done or did not finish. `results.json` 
 | `packs/examples/supplier-interview.json` | A worked example of one system's own pack: 44 attacks and 20 ordinary messages |
 | `targets/examples/` | Target files to copy |
 | `practice/bot.py` | The made-up chatbot, with a chat page at `/`. Not a model |
-| `skills/model-attack-test/` | The skill: `SKILL.md` (through the chat page) and `address-route.md` (straight to an address) |
+| `skills/model-attack-test/` | The skill: `SKILL.md` (through the chat page), `address-route.md` (straight to an address), and `START-HERE.txt` (plain instructions for someone who is not a developer) |
 | `package-skill.sh`, `dist/` | Builds the skill as one folder that stands on its own, and a zip. `dist/` is built, never edited |
 | `.claude-plugin/plugin.json` | Also makes the whole folder a Claude Code plugin |
 | `tests/`, `run-tests.sh` | 132 tests. `./run-tests.sh` runs them all on this computer |
