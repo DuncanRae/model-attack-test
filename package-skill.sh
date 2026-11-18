@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the skill as one folder that stands on its own, and a zip of it:
-#   dist/model-attack-test/            copy this into Claude's or Antigravity's skills folder
+#   dist/model-attack-test/            copy this into Claude's, Codex's or Antigravity's skills folder
 #   dist/model-attack-test-skill.zip   or upload this where a skill is added as a file
 # The folder holds SKILL.md and a copy of the tool under scripts/. It is built from this source every time: never
 # edit dist/ by hand. The tests are run first, and nothing is built if one fails.

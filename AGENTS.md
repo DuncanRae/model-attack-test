@@ -104,7 +104,7 @@ claude plugin validate .                         # the plugin layout
 claude --plugin-dir .                            # try the skill in Claude Code without installing it
 ```
 
-## 7. The state at v0.4.0 (18 November 2026)
+## 7. The state at v0.4.1 (18 November 2026)
 
 **It has been run almost only against the practice chatbot, which is not a model.** `CHANGELOG.md` has what each
 version was checked against.
@@ -123,8 +123,11 @@ Not checked, in the order it matters:
 2. **The `recent` pack through a browser.** Text that cannot be seen (`rec-uns-01`, `rec-uns-02`) may not survive
    being typed, and several attacks have many lines.
 3. **The sources in `recent`**, against the original papers. They were checked against public write-ups.
-4. **The skill in Antigravity.** It loads there. Gemini 4 declined the work (D32).
-5. **The model judge against a real model** (the command-line route).
+4. **The skill in Codex.** The README has instructions written from OpenAI's documentation (November 2026).
+   Nobody has run it there. Its browser asks for confirmation before sensitive actions, which may make a long run
+   tedious, and its model may decline as Gemini did.
+5. **The skill in Antigravity.** It loads there. Gemini 4 declined the work (D32).
+6. **The model judge against a real model** (the command-line route).
 
 ## 8. Open work
 

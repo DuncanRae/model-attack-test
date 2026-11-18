@@ -2,6 +2,24 @@
 
 Every version: what changed, how it was checked, and what was not.
 
+## v0.4.1 (18 November 2026)
+
+**What changed**
+
+- **Instructions for Codex** in the README: where the skill folder goes (`~/.agents/skills/`), that the browser
+  route needs the Codex desktop app because the CLI and IDE extension have no browser, how to let its browser reach
+  your system and sign in, and how to ask for the skill. A table says where each agent stands.
+
+**How it was checked**
+
+- Against OpenAI's documentation on 18 November 2026: the skills page for where skills are read from and how one is
+  asked for, and the browser page for what the built-in browser can do and where it is available.
+
+**What was not checked**
+
+- **The skill has not been run in Codex.** The instructions are from documentation only. Whether its model will do
+  the work, and how often its browser stops to ask for confirmation, are not known.
+
 ## v0.4.0 (18 November 2026)
 
 The first public version.

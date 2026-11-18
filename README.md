@@ -31,10 +31,15 @@ harmful content will not be taken.
 
 ## The skill: testing through the chat page
 
-The skill runs in Claude (Claude Code, and the Code tab of the Claude desktop app). It also loads in Google
-Antigravity, which reads the same kind of skill folder, but there the model decides whether to do the work: on
-18 November 2026 Gemini 4 declined (see "What to know" below). The agent needs a browser it can control and a
-terminal with Python 3.
+The skill is one folder in the common "agent skill" form (a `SKILL.md` with a name and a description), which
+Claude, OpenAI's Codex and Google Antigravity all read. The agent needs a browser it can control and a terminal with
+Python 3. Whether an agent will do the work is up to its model:
+
+| Agent | Where it stands |
+|---|---|
+| Claude (Claude Code, and the Code tab of the Claude desktop app) | Runs. It asks you to confirm the system is yours to test first |
+| Codex | Should load: instructions below. Not tried yet |
+| Antigravity | Loads. On 18 November 2026 Gemini 4 declined to do the work (see "What to know" below) |
 
 ### Install it
 
@@ -50,10 +55,45 @@ That makes `dist/model-attack-test/` (the skill, with a copy of the tool inside 
 | Agent | Where the folder goes |
 |---|---|
 | Claude Code, Claude desktop (Code tab) | `~/.claude/skills/model-attack-test/` for you alone, or `<project>/.claude/skills/model-attack-test/` for one project |
+| Codex | `~/.agents/skills/model-attack-test/` for you alone, or `<repository>/.agents/skills/model-attack-test/` for one repository |
 | Antigravity | `~/.gemini/config/skills/model-attack-test/` for you alone, or `<workspace>/.agents/skills/model-attack-test/` for one workspace. Gemini 4 declined to run it |
 | Claude on the web or desktop chat | Upload `dist/model-attack-test-skill.zip` where skills are added in Settings. Not tried |
 
 To update it later, build again, delete the old copy and copy the new one.
+
+For example, for Claude:
+
+```bash
+mkdir -p ~/.claude/skills && cp -R dist/model-attack-test ~/.claude/skills/
+```
+
+### With Codex
+
+These steps follow OpenAI's documentation as it stood in November 2026. Nobody has run the skill in Codex yet, so
+treat them as a starting point and please report how it goes.
+
+1. **Install the skill.** Codex reads skills from `.agents/skills`:
+
+```bash
+mkdir -p ~/.agents/skills && cp -R dist/model-attack-test ~/.agents/skills/
+```
+
+   For one repository only, copy it to `.agents/skills/` in that repository instead. Antigravity reads that same
+   folder, so one copy there serves both. Older versions of Codex read `~/.codex/skills/`: use that if the skill
+   does not show up.
+2. **Use the Codex desktop app** (Codex in the ChatGPT desktop app). The skill needs a browser the agent can click
+   and type in, and Codex's built-in browser is in the desktop app only. It is not in the Codex CLI or the IDE
+   extension: there, use the command line instead (below), which needs no browser.
+3. **Let it reach your system.** In Settings, under Browser, the agent permissions say which sites Codex may open.
+   Allow your system's address. The built-in browser has its own profile and does not share your signed-in tabs,
+   so sign in to your system in that browser yourself when the page appears. To use a tab in your everyday browser
+   instead, set up the Codex browser extension.
+4. **Start a new thread and ask for it.** Type `$model-attack-test` (or `@` and pick it in ChatGPT), or say what
+   you want: *"Use the model-attack-test skill on the chatbot at https://my-bot-dev.example. It is mine to test."*
+5. **Expect to be asked.** Codex asks for confirmation before actions it treats as sensitive, such as submitting
+   information to a site. If it asks before every message, see whether it offers to allow the site for the session.
+6. **If the model declines**, as Gemini did in Antigravity, that is its rule. Do not reword the skill to get past
+   it: use Claude, or the command line.
 
 ### Use it
 
